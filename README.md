@@ -2,15 +2,12 @@
 
 Our team has run an evaluation on all the available IMU models at both makerspaces to determine which ones would be the best for our purposes.
 
-## BMI160 Shuttleboard
-The Bosch BMI160 shuttleboard is a PCB that combines a 6 degrees of freedom (6DoF) IMU with a BMM150 magnetometer. It is a breakout board that lets us interface with all three types of sensors (accelerometer, gyroscope, and magnetometer) easily. 
+## BMI160+BMM150 Shuttleboard
+Prior to our determination that we wanted onboard processing capability as a feature for the IMUs, we selected this IMU due to its resolution being on the same order as the BNO055 (a Zero-Offset error of +- 1-2 degrees per second with a 250 degrees per second system), and its power consumption being on the order of 100s of microamps as opposed to milliamps, since we were cognizant of the implications of needing multiple sensors on one bow that were heavily power-consuming. However, this shuttleboard is obsolete, which speaks to the fact that there is improved technology in the field for the same purposes, and there is currently a lack of support from Bosch (the manufacturer of these IMUs) and to prototype with these boards we would need to write our own processing algorithm for handling the data received from this sensor, which would add an extensive amount of effort to a section of the project which is not a priority as it is not the novel component of the project.
 
-### Advantages
-- Readily available at both M5 and UMass All-Campus Makerspace.
-- Both the BMI160 and BMM150 are low power and low noise.
-### Diadvantages
-- Lack of driver support for shuttleboard with Arduino, which doesn't facilitate prototyping as well as other IMUs.
-- Form factor of the shuttleboard is bulkier than 9DoF accelerometers we are also considering.
+## LSM9DS1 
+After determining our issues with the shuttleboard, we decided to pivot to analyzing two variants of IMUs with onboard processing capabilities. The LSM9DS1 was one of two available options with this criteria. We evaluated with a compass and the archery range that an accuracy of ~1-2 degrees per second in a 250 degrees per second system was the specification that worked best in our case with maintaining aim accuracy. We decided that triangulating IMUs on varying positions of the bow would facilitate improving accuracy because it would enable us to get multiple perspectives on the direction of the arrow and improve the aim of the user.  The information about the LSM9DS1’s accuracy does not provide a small range of expected accuracy, stating  <30dps with a 250dps system according to the datasheet, which lead us to believe that the accuracy of the LSM9DS1 would not likely fit our specifications that we outlined in Section D. Further, the typical power draw was 4.3mA for the LSM9DS1.
 
-## BNO055 IMU
-The BNO055 is the IMU that was recommended by Shira on Piazza for our purposes.
+## BNO055
+In conclusion of our initial analysis of the Inertial Measurement Units for this project, we have chosen the BNO055, as its accuracy is on the order of the Bosch BMI160 and BMM150 shuttleboard while having onboard processing capabilities, both of which are on the order we analyzed to be acceptable for our purposes. We found that its low power mode provided a typical draw of 2.7mA, compromising the sensor reading rate as a result, and its typical draw on average was 3.1mA, which is considerably higher than the shuttleboard but understandable due to the convenience that it affords us. 
+
