@@ -49,11 +49,7 @@
         }
       },
       "diff_pair_dimensions": [],
-      "drc_exclusions": [
-        "unconnected_items|49082000|56771401|a3005b1f-dfa7-4889-b201-d965c521a100|d2c22689-8a3e-44a2-bb95-096e1e43b80e",
-        "unconnected_items|80924400|41351200|e7f1846b-d60e-4aa2-9473-971549e5e03e|48a7e9ee-17e4-4d65-a0cd-7dc1e06080bc",
-        "unconnected_items|93942400|40182800|2228d1c0-155b-4fc2-8593-0d8b05c63336|d7bb96ec-ce6f-43d2-a0d7-e8b07b7f54fb"
-      ],
+      "drc_exclusions": [],
       "meta": {
         "version": 2
       },
