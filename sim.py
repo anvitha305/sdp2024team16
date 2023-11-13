@@ -1,6 +1,7 @@
 from ursina import *
 from ursina.shaders import lit_with_shadows_shader
 import numpy as np
+import ballistics as bal
 
 dist = 50
 g = 9.81 # gravity m/s^2
@@ -48,16 +49,24 @@ def calculatePositions():
     target.position = (dist,0,0)
     aimSphere.position = (dist,np.tan(aimAngle) * dist,0)
 
+def calculateTrajectory():
+    aimAngle = calcTheta(dist)
+    traj = bal.ballistics(v0,aimAngle,0,0,0.005,k,0,dist)
+    for entity in trajEntities:
+        destroy(entity)
+        trajEntities.remove(entity)
+    for index in range(len(traj['time'])):
+           trajEntities.append(Entity(model = "sphere", position = (traj['x'][index],traj['y'][index],0), scale = (0.15,0.15,0.15), color=color.blue, texture="white_cube"))
 
 def update():
     cameraControl()
     calculatePositions()
+    calculateTrajectory()
 
 app = Ursina()
 
 bowPos = (0,0,0)
 bowRot = (0,0,0)
-
 
 camera = EditorCamera()
 pivot = Entity(model = "sphere", position=(-10, 10, 10), shader=lit_with_shadows_shader, color=color.yellow)
@@ -68,5 +77,6 @@ ground_plane.model.set_two_sided(True)
 target = Entity(model = "circle", position = (dist,0,0), rotation = (0,90,0), shader=lit_with_shadows_shader, color=color.red, texture="white_cube")
 target.set_two_sided(True)
 aimSphere = Entity(model = "sphere", position = (4,3,0), scale = (0.25,0.25,0.25), shader=lit_with_shadows_shader, color=color.red, texture="white_cube")
+trajEntities = []
 
 app.run()
