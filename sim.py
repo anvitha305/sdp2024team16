@@ -1,22 +1,18 @@
 from ursina import *
-from ursina.shaders import lit_with_shadows_shader
+from ursina.shaders import *
 import numpy as np
 import ballistics as bal
 
 dist = 50
+yaw = 0
+aimAngle = 0
 g = 9.81 # gravity m/s^2
 k = 0.0023 # drag effect (approx)
 N = 10 # num iterations on summation
 v0 = 75 # initial arrow speed in m/s
-def calcTheta(Z): # z is distance in meters, returns launch angle in radians 
-    sum = 1
-    for n in range (1, 10):
-        sum += ((k*Z)**n) / (np.math.factorial(n+1))
-    return 0.5 * np.arcsin(g*Z / (v0*v0) * sum)
-
 
 def cameraControl():
-    global dist
+    global dist,yaw,aimAngle
     panMod = 30 if held_keys['left shift'] else 5
 
     if held_keys['right mouse'] or held_keys['middle mouse']:
@@ -37,30 +33,36 @@ def cameraControl():
 
     if held_keys['up arrow'] and dist <= 100:
         dist += 1
+        aimAngle = bal.calcTheta(v0,dist,0.001,k)
     if held_keys['down arrow'] and dist >= 9:
         dist -= 1
-
-def calculatePositions():
-    aimAngle = calcTheta(dist)
-    bowRot = (0,0,-np.rad2deg(aimAngle))
-
-    bow.position = bowPos
-    bow.rotation = bowRot
-    target.position = (dist,0,0)
-    aimSphere.position = (dist,np.tan(aimAngle) * dist,0)
+        aimAngle = bal.calcTheta(v0,dist,0.001,k)
+    if held_keys['right arrow']:
+        yaw = (yaw+1) % 360
+    if held_keys['left arrow']:
+        yaw = (yaw-1) % 360
 
 def calculateTrajectory():
-    aimAngle = calcTheta(dist)
-    traj = bal.ballistics(v0,aimAngle,0,0,0.005,k,0,dist)
+    bowRot = (0,yaw,-np.rad2deg(aimAngle))
+    bow.position = bowPos
+    bow.rotation = bowRot
+    endX = dist*np.cos(np.deg2rad(-yaw))
+    endZ = dist*np.sin(np.deg2rad(-yaw))
+    target.position = (endX,0,endZ)
+    target.rotation = (0,(yaw+90)%360,0)
+    aimSphere.position = (endX,np.tan(aimAngle) * dist,endZ)
+
+    traj = bal.ballistics(v0,aimAngle,0,0,0.01,k,0,dist)
     for entity in trajEntities:
         destroy(entity)
         trajEntities.remove(entity)
     for index in range(len(traj['time'])):
-           trajEntities.append(Entity(model = "sphere", position = (traj['x'][index],traj['y'][index],0), scale = (0.15,0.15,0.15), color=color.blue, texture="white_cube"))
+           newX = traj['x'][index]*np.cos(np.deg2rad(-yaw))
+           newZ = traj['x'][index]*np.sin(np.deg2rad(-yaw))
+           trajEntities.append(Entity(model = "sphere", position = (newX,traj['y'][index],newZ), shader=colored_lights_shader, scale = (0.15,0.15,0.15), color=color.blue, texture="white_cube"))
 
 def update():
     cameraControl()
-    calculatePositions()
     calculateTrajectory()
 
 app = Ursina()
@@ -69,14 +71,17 @@ bowPos = (0,0,0)
 bowRot = (0,0,0)
 
 camera = EditorCamera()
-pivot = Entity(model = "sphere", position=(-10, 10, 10), shader=lit_with_shadows_shader, color=color.yellow)
+pivot = Entity(model = "sphere", position=(-10, 10, 10), shader=colored_lights_shader, color=color.yellow)
 light = DirectionalLight(parent=pivot, color=color.white, position=(10, 10, 10))
-bow = Entity(model = "arrow", rotation = (0,0,0), scale = (2,2,2), shader=lit_with_shadows_shader, color=color.blue, texture="white_cube")
+bow = Entity(model = "arrow", rotation = (0,0,0), scale = (2,2,2), shader=colored_lights_shader, color=color.blue, texture="white_cube")
 ground_plane = Entity(model='plane', scale=(400, 1, 400), position=(0,-5,0), texture='grass')
 ground_plane.model.set_two_sided(True)
-target = Entity(model = "circle", position = (dist,0,0), rotation = (0,90,0), shader=lit_with_shadows_shader, color=color.red, texture="white_cube")
+target = Entity(model = "circle", position = (dist,0,0), rotation = (0,90,0), shader=colored_lights_shader, color=color.red, texture="white_cube")
 target.set_two_sided(True)
-aimSphere = Entity(model = "sphere", position = (4,3,0), scale = (0.25,0.25,0.25), shader=lit_with_shadows_shader, color=color.red, texture="white_cube")
+aimSphere = Entity(model = "sphere", position = (4,3,0), scale = (0.25,0.25,0.25), shader=colored_lights_shader, color=color.red, texture="white_cube")
 trajEntities = []
 
+calculateTrajectory()
+
 app.run()
+
