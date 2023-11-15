@@ -6,6 +6,7 @@ import ballistics as bal
 dist = 50
 yaw = 0
 aimAngle = 0
+displayI = 100
 g = 9.81 # gravity m/s^2
 k = 0.0023 # drag effect (approx)
 N = 10 # num iterations on summation
@@ -33,10 +34,10 @@ def cameraControl():
 
     if held_keys['up arrow'] and dist <= 100:
         dist += 1
-        aimAngle = bal.calcTheta(v0,dist,0.001,k)
+        aimAngle = bal.calcTheta(v0,dist,0.0002,k)
     if held_keys['down arrow'] and dist >= 9:
         dist -= 1
-        aimAngle = bal.calcTheta(v0,dist,0.001,k)
+        aimAngle = bal.calcTheta(v0,dist,0.0002,k)
     if held_keys['right arrow']:
         yaw = (yaw+1) % 360
     if held_keys['left arrow']:
@@ -52,11 +53,12 @@ def calculateTrajectory():
     target.rotation = (0,(yaw+90)%360,0)
     aimSphere.position = (endX,np.tan(aimAngle) * dist,endZ)
 
-    traj = bal.ballistics(v0,aimAngle,0,0,0.01,k,0,dist)
+    traj = bal.ballistics(v0,aimAngle,0,0,0.0001,k,0,dist)
+    size = len(traj['time'])
     for entity in trajEntities:
         destroy(entity)
         trajEntities.remove(entity)
-    for index in range(len(traj['time'])):
+    for index in np.linspace(0,size-1,displayI,dtype=int):
            newX = traj['x'][index]*np.cos(np.deg2rad(-yaw))
            newZ = traj['x'][index]*np.sin(np.deg2rad(-yaw))
            trajEntities.append(Entity(model = "sphere", position = (newX,traj['y'][index],newZ), shader=colored_lights_shader, scale = (0.15,0.15,0.15), color=color.blue, texture="white_cube"))
