@@ -1,5 +1,6 @@
 import numpy as np
 import time as timer
+import matplotlib.pyplot as plt
 
 def ballistics(initV, initA, initX, initY, dt, dragCoeff, stopY=0, stopX=10000, printable=False):
     gravity = 9.81 # m/s^2
@@ -40,15 +41,21 @@ def ballistics(initV, initA, initX, initY, dt, dragCoeff, stopY=0, stopX=10000, 
     retDict['y'] = yList
     return retDict
 
-def calcTheta(v0,dist,dt,coeff): # z is distance in meters, returns launch angle in radians 
+def calcTheta(v0,dist,dt,coeff): # takes initial velocity, distance to target, time intervals and drag coefficient, returns launch angle in radians 
     upperAngle = 45
     lowerAngle = -90
     tryAngle = 10
     curDX = 0
 
+    traj = ballistics(v0,np.deg2rad(upperAngle),0,0,dt,coeff)
+    if dist < 0 or traj['x'][len(traj['x'])-1] < dist:
+        return np.deg2rad(90)
+
     while True:
+        
         traj = ballistics(v0,np.deg2rad(tryAngle),0,0,dt,coeff)
         curDX = dist-traj['x'][len(traj['x'])-1]
+        #print("Trying: "+str(tryAngle)+" "+str(curDX))
         if np.abs(curDX) < 0.1:
             break
         elif curDX < 0:
@@ -62,12 +69,23 @@ def calcTheta(v0,dist,dt,coeff): # z is distance in meters, returns launch angle
 
 if __name__ == "__main__":
     start_time = timer.time()
-    initV = 183 # m/s
+    initV = 75 # m/s
     initA = np.radians(3) # radians
     initX = 0 # meters
     initY = 0 # meters
-    dt = 0.001 # seconds
-    dragCoeff = 0.00235
-    #traj = ballistics(initV, initA, initX, initY, dt, dragCoeff,0,10000,True)
-    print(calcTheta(initV,300,dt,dragCoeff))
+    dt = 0.0002 # seconds
+    dragCoeff = 0.0003747
+    traj = ballistics(initV, initA, initX, initY, dt, dragCoeff,0,10000,False)
+    
+    """times = np.geomspace(0.00001,0.1,50)
+    dists = []
+    for interval in times:
+        traj = ballistics(initV, initA, initX, initY, interval, dragCoeff,0,10000)
+        dists.append(traj['x'][len(traj['x'])-1])
+        #print(str(interval)+" "+str(traj['x'][len(traj['x'])-1]))
+    plt.plot(times,dists)
+    plt.xscale("log")
+    plt.show()"""
     print("--- %s seconds ---" % (timer.time() - start_time))
+    #print(np.rad2deg(calcTheta(initV,300,dt,dragCoeff)))
+    

@@ -8,12 +8,15 @@ yaw = 0
 aimAngle = 0
 displayI = 100
 g = 9.81 # gravity m/s^2
-k = 0.0023 # drag effect (approx)
+k = 0.0003747 # drag effect (approx)
 N = 10 # num iterations on summation
 v0 = 75 # initial arrow speed in m/s
+counter = 0
+needsUpdate = True
+traj = {}
 
 def cameraControl():
-    global dist,yaw,aimAngle
+    global dist,yaw,aimAngle,needsUpdate
     panMod = 30 if held_keys['left shift'] else 5
 
     if held_keys['right mouse'] or held_keys['middle mouse']:
@@ -34,16 +37,24 @@ def cameraControl():
 
     if held_keys['up arrow'] and dist <= 100:
         dist += 1
-        aimAngle = bal.calcTheta(v0,dist,0.0002,k)
+        needsUpdate = True
     if held_keys['down arrow'] and dist >= 9:
         dist -= 1
-        aimAngle = bal.calcTheta(v0,dist,0.0002,k)
+        needsUpdate = True
     if held_keys['right arrow']:
         yaw = (yaw+1) % 360
     if held_keys['left arrow']:
         yaw = (yaw-1) % 360
 
 def calculateTrajectory():
+    global counter,aimAngle,needsUpdate,traj
+    counter += 1
+    if counter % 30 == 1 and needsUpdate:
+        aimAngle = bal.calcTheta(v0,dist,0.0002,k)
+        counter = 0
+        traj = bal.ballistics(v0,aimAngle,0,0,0.0001,k,0,dist)
+        needsUpdate = False
+
     bowRot = (0,yaw,-np.rad2deg(aimAngle))
     bow.position = bowPos
     bow.rotation = bowRot
@@ -53,15 +64,14 @@ def calculateTrajectory():
     target.rotation = (0,(yaw+90)%360,0)
     aimSphere.position = (endX,np.tan(aimAngle) * dist,endZ)
 
-    traj = bal.ballistics(v0,aimAngle,0,0,0.0001,k,0,dist)
     size = len(traj['time'])
     for entity in trajEntities:
         destroy(entity)
         trajEntities.remove(entity)
     for index in np.linspace(0,size-1,displayI,dtype=int):
-           newX = traj['x'][index]*np.cos(np.deg2rad(-yaw))
-           newZ = traj['x'][index]*np.sin(np.deg2rad(-yaw))
-           trajEntities.append(Entity(model = "sphere", position = (newX,traj['y'][index],newZ), shader=colored_lights_shader, scale = (0.15,0.15,0.15), color=color.blue, texture="white_cube"))
+        newX = traj['x'][index]*np.cos(np.deg2rad(-yaw))
+        newZ = traj['x'][index]*np.sin(np.deg2rad(-yaw))
+        trajEntities.append(Entity(model = "sphere", position = (newX,traj['y'][index],newZ), shader=colored_lights_shader, scale = (0.15,0.15,0.15), color=color.blue, texture="white_cube"))
 
 def update():
     cameraControl()
@@ -83,7 +93,10 @@ target.set_two_sided(True)
 aimSphere = Entity(model = "sphere", position = (4,3,0), scale = (0.25,0.25,0.25), shader=colored_lights_shader, color=color.red, texture="white_cube")
 trajEntities = []
 
+aimAngle = bal.calcTheta(v0,dist,0.0002,k)
 calculateTrajectory()
 
 app.run()
+
+
 
