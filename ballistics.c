@@ -21,7 +21,7 @@ struct BallisticsResult ballistics(double initV, double initA, double initX, dou
     int index = 1;
     double time = dt;
 
-    // Memory allocation for arrays
+    
     retDict.time = (double *)malloc(sizeof(double));
     retDict.velocity = (double *)malloc(sizeof(double));
     retDict.angle = (double *)malloc(sizeof(double));
@@ -104,11 +104,11 @@ double calcTheta(double v0, double dist, double dt, double coeff) {
 
 int main() {
     double start_time = clock() / (double)CLOCKS_PER_SEC;
-    double initV = 75; // m/s
-    double initA = 3 * (M_PI / 180.0); // radians
-    double initX = 0; // meters
-    double initY = 0; // meters
-    double dt = 0.0002; // seconds
+    double initV = 75; 
+    double initA = 3 * (M_PI / 180.0); 
+    double initX = 0; 
+    double initY = 0;
+    double dt = 0.0002; 
     double dragCoeff = 0.0003747;
 
     struct BallisticsResult traj = ballistics(initV, initA, initX, initY, dt, dragCoeff, 0, 10000, 0);
@@ -129,9 +129,9 @@ int main() {
 
     printf("--- %lf seconds ---\n", (clock() / (double)CLOCKS_PER_SEC) - start_time);
 
-    // printf("%lf\n", calcTheta(initV, 300, dt, dragCoeff) * (180.0 / M_PI));
+    
 
-    // Free allocated memory
+    
     free(traj.time);
     free(traj.velocity);
     free(traj.angle);
