@@ -1,0 +1,169 @@
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+
+class Vec3d {
+public:
+  double x, y, z;
+
+  Vec3d(double x, double y, double z) {
+    this->x = x;
+    this->y = y;
+    this->z = z;
+  }
+
+  Vec3d add(Vec3d other) {
+    return Vec3d(x + other.x, y + other.y, z + other.z);
+  }
+
+  Vec3d subtract(Vec3d other) {
+    return Vec3d(x - other.x, y - other.y, z - other.z);
+  }
+
+  Vec3d multiply(double scalar) {
+    double newX = x * scalar;
+    double newY = y * scalar;
+    double newZ = z * scalar;
+
+    return Vec3d(newX, newY, newZ);
+  }
+
+  Vec3d cross(Vec3d other) {
+    double newX = y * other.z - z * other.y;
+    double newY = z * other.x - x * other.z;
+    double newZ = x * other.y - y * other.x;
+
+    return Vec3d(newX, newY, newZ);
+  }
+
+  double dot(Vec3d other) {
+    return x * other.x + y * other.y + z * other.z;
+  }
+
+  Vec3d normalize() {
+    double magnitude = sqrt(x * x + y * y + z * z);
+
+    // Check for division by zero
+    if (magnitude == 0) {
+      // Handle the error as needed
+    }
+
+    double newX = x / magnitude;
+    double newY = y / magnitude;
+    double newZ = z / magnitude;
+
+    return Vec3d(newX, newY, newZ);
+  }
+
+  double length() {
+    return sqrt(x * x + y * y + z * z);
+  }
+
+  double lengthSquared() {
+    return x * x + y * y + z * z;
+  }
+
+  Vec3d project(Vec3d other) {
+    double dotProduct = this->dot(other);
+    double uMagnitudeSquared = other.lengthSquared();
+
+    // Check for division by zero
+    if (uMagnitudeSquared == 0) {
+      // Handle the error as needed
+    }
+
+    double scalar = dotProduct / uMagnitudeSquared;
+
+    return other.multiply(scalar);
+  }
+
+  String toString() {
+    return "(" + String(x) + ", " + String(y) + ", " + String(z) + ")";
+  }
+
+  bool operator!=(const Vec3d &other) const {
+    return x != other.x || y != other.y || z != other.z;
+  }
+};
+
+void setup() {
+  Serial.begin(9600);
+
+  Vec3d lineEnd(13.22966, 2.02974, 10.55627);
+  Vec3d planeCorner1(8.13084, 2.6396, 8.51299);
+  Vec3d planeCorner2(7.58817, 4.2727, 1.57597);
+  Vec3d planeCorner3(13.15374, -1.85376, 0);
+
+  Vec3d intersectionPoint = findIntersection(lineEnd, planeCorner1, planeCorner2, planeCorner3);
+
+  if (intersectionPoint != Vec3d(0, 0, 0)) {
+    Serial.println("Intersection Point: " + intersectionPoint.toString());
+    Vec3d pixel = findPixel(intersectionPoint, planeCorner1, planeCorner2, planeCorner3, 64, 128);
+    Serial.println("(" + String(pixel.x) + "," + String(pixel.y) + ")");
+  } else {
+    Serial.println("No intersection.");
+  }
+}
+
+Vec3d findIntersection(Vec3d point, Vec3d screen1, Vec3d screen2, Vec3d screen3) {
+  Vec3d origin(0, 0, 0);
+  Vec3d planeNormal = screen2.subtract(screen1).cross(screen3.subtract(screen1)).normalize();
+  Vec3d lineDirection = point.subtract(origin).normalize();
+
+  double dotProduct = planeNormal.dot(lineDirection);
+
+  if (abs(dotProduct) < 1e-6) {
+    // The line is parallel to the plane, no intersection
+    Serial.println("Parallel!");
+    return Vec3d(0, 0, 0);
+  }
+
+  double t = (planeNormal.dot(screen1) - planeNormal.dot(origin)) / dotProduct;
+
+  if (t < 0 || t / point.length() > 1) {
+    // The intersection point is outside the line segment
+    Serial.println("Out of Line Bounds " + String(t) + " | " + String(t / point.length()));
+    return Vec3d(0, 0, 0);
+  }
+
+  Vec3d intersectionPoint = origin.add(lineDirection.multiply(t));
+
+  Vec3d uvVec = intersectionPoint.subtract(screen2);
+  Vec3d uAxis = screen3.subtract(screen2);
+  Vec3d vAxis = screen1.subtract(screen2);
+  Vec3d uVec = uvVec.project(uAxis);
+  Vec3d vVec = uvVec.project(vAxis);
+
+  double u = uVec.length() / uAxis.length();
+  double v = vVec.length() / vAxis.length();
+
+  Serial.println(String(u) + " | " + String(v) + " | " + uVec.toString() + " | " + vVec.toString());
+
+  if (!(u <= 1 && v <= 1 && uVec.dot(uAxis) >= 0 && vVec.dot(vAxis) >= 0)) {
+    Serial.println("Out of Screen Bounds " + intersectionPoint.toString());
+    return Vec3d(0, 0, 0);
+  }
+
+  return intersectionPoint;
+}
+
+Vec3d findPixel(Vec3d intersectionPoint, Vec3d screen1, Vec3d screen2, Vec3d screen3, int screenWidth, int screenHeight) {
+  Vec3d uvVec = intersectionPoint.subtract(screen2);
+  Vec3d uAxis = screen3.subtract(screen2);
+  Vec3d vAxis = screen1.subtract(screen2);
+  Vec3d uVec = uvVec.project(uAxis);
+  Vec3d vVec = uvVec.project(vAxis);
+
+  double u = uVec.length() / uAxis.length();
+  double v = vVec.length() / vAxis.length();
+
+  int xPixel = (int)(u * screenWidth);
+  int yPixel = (int)(v * screenHeight);
+  return Vec3d(xPixel, yPixel, 0);
+}
+
+void loop() {
+  // Your code here
+}
