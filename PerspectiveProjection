@@ -3,10 +3,25 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+#define SCREEN_WIDTH 64 // OLED display width, in pixels
+#define SCREEN_HEIGHT 128 // OLED display height, in pixels
+
+// Declaration for SSD1306 display connected using software SPI (default case):
+#define OLED_MOSI   9
+#define OLED_CLK   10
+#define OLED_DC    11
+#define OLED_CS    12
+#define OLED_RESET 13
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,
+  OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
+double displayX = 13;
+
 
 class Vec3d {
 public:
   double x, y, z;
+  Vec3d() : x(0), y(0), z(0) {}
+
 
   Vec3d(double x, double y, double z) {
     this->x = x;
@@ -88,23 +103,29 @@ public:
   }
 };
 
+// Declaration of Vec3d variable pixel
+Vec3d pixel; 
+
+// Function prototypes
+Vec3d findIntersection(Vec3d point, Vec3d screen1, Vec3d screen2, Vec3d screen3);
+Vec3d findPixel(Vec3d intersectionPoint, Vec3d screen1, Vec3d screen2, Vec3d screen3, int screenWidth, int screenHeight);
+
+
+
 void setup() {
   Serial.begin(9600);
 
-  Vec3d lineEnd(13.22966, 2.02974, 10.55627);
-  Vec3d planeCorner1(8.13084, 2.6396, 8.51299);
-  Vec3d planeCorner2(7.58817, 4.2727, 1.57597);
-  Vec3d planeCorner3(13.15374, -1.85376, 0);
-
-  Vec3d intersectionPoint = findIntersection(lineEnd, planeCorner1, planeCorner2, planeCorner3);
-
-  if (intersectionPoint != Vec3d(0, 0, 0)) {
-    Serial.println("Intersection Point: " + intersectionPoint.toString());
-    Vec3d pixel = findPixel(intersectionPoint, planeCorner1, planeCorner2, planeCorner3, 64, 128);
-    Serial.println("(" + String(pixel.x) + "," + String(pixel.y) + ")");
-  } else {
-    Serial.println("No intersection.");
+  if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_CS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
   }
+
+  display.setRotation(2);
+  display.display(); // Clear the display buffer
+  delay(2000); // Pause for 2 seconds
+  display.clearDisplay(); // Clear the display buffer
+
+  
 }
 
 Vec3d findIntersection(Vec3d point, Vec3d screen1, Vec3d screen2, Vec3d screen3) {
@@ -164,6 +185,64 @@ Vec3d findPixel(Vec3d intersectionPoint, Vec3d screen1, Vec3d screen2, Vec3d scr
   return Vec3d(xPixel, yPixel, 0);
 }
 
+
+
+
 void loop() {
-  // Your code here
+  
+  for (int i = 0; i<=100; i++){
+    displayX= displayX+0.01;
+
+    
+    Vec3d lineEnd(displayX, 2.02974, 10.55627);
+    Vec3d planeCorner1(8.13084, 2.6396, 8.51299);
+    Vec3d planeCorner2(7.58817, 4.2727, 1.57597);
+    Vec3d planeCorner3(13.15374, -1.85376, 0);
+  
+    Vec3d intersectionPoint = findIntersection(lineEnd, planeCorner1, planeCorner2, planeCorner3);
+  
+    if (intersectionPoint != Vec3d(0, 0, 0)) {
+      Serial.println("Intersection Point: " + intersectionPoint.toString());
+      pixel = findPixel(intersectionPoint, planeCorner1, planeCorner2, planeCorner3, 64, 128);
+      Serial.println("(" + String(pixel.x) + "," + String(pixel.y) + ")");
+    } else {
+      Serial.println("No intersection.");
+    }
+    
+    // Your code here
+    //display.display();
+    int x = pixel.x;
+    int y = pixel.y;
+  
+    
+    display.clearDisplay(); //Clear the display buffer
+
+    //display.drawPixel(x, y, WHITE);
+    display.drawPixel(x, y+2, WHITE); //above
+    display.drawPixel(x, y+3, WHITE); //point
+    
+    display.drawPixel(x+2, y, WHITE); //right
+    display.drawPixel(x+3, y, WHITE); 
+  
+    display.drawPixel(x, y-2, WHITE); //below
+    display.drawPixel(x, y-3, WHITE);
+  
+    display.drawPixel(x-2, y, WHITE); //left
+    display.drawPixel(x-3, y, WHITE);
+    display.display();
+    delay(5); //wait half a second
+    
+  }
+    
+  displayX = displayX-1;
+
+  //The crosshair is simulated with relation 
+ //The crosshair is correlated to the
+//Shows the projection of the 3D space on the 2D space. It is related to a point in 3D space that it is simulating. 
+//We have the equations to change the display the based on where the diplasy is and where the point is in 3D space. THis will be hooked up to live data from our IMUs for our CDR. 
+
+ 
+
+
+  
 }
