@@ -2,7 +2,7 @@ from ursina import *
 from ursina.shaders import *
 import numpy as np
 import ballistics as bal
-
+import imu
 dist = 50
 yaw = 0
 aimAngle = 0
@@ -12,7 +12,11 @@ k = 0.0003747 # drag effect (approx)
 N = 10 # num iterations on summation
 v0 = 75 # initial arrow speed in m/s
 counter = 0
+global bowPos
+global bowRot
+global oldRot
 needsUpdate = True
+rot = imu.get_data()
 traj = {}
 
 def cameraControl():
@@ -56,6 +60,13 @@ def calculateTrajectory():
         needsUpdate = False
 
     bowRot = (0,yaw,-np.rad2deg(aimAngle))
+    oldRot = bowRot
+    try:
+        bowRot = next(rot)['Ort']
+    except KeyError:
+        pass
+    if type(bowRot) == dict:
+         bowRot = oldRot
     bow.position = bowPos
     bow.rotation = bowRot
     endX = dist*np.cos(np.deg2rad(-yaw))
@@ -78,9 +89,9 @@ def update():
     calculateTrajectory()
 
 app = Ursina()
-
 bowPos = (0,0,0)
 bowRot = (0,0,0)
+oldRot = (0,0,0)
 
 camera = EditorCamera()
 pivot = Entity(model = "sphere", position=(-10, 10, 10), shader=colored_lights_shader, color=color.yellow)
@@ -97,6 +108,3 @@ aimAngle = bal.calcTheta(v0,dist,0.0002,k)
 calculateTrajectory()
 
 app.run()
-
-
-
