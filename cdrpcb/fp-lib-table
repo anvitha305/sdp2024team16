@@ -1,0 +1,5 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "25LC1024")(type "KiCad")(uri "/Users/ivy/Downloads/ul_25LC1024-I-P/KiCADv6/25LC1024.pretty")(options "")(descr "")(disabled))
+  (lib (name "RP2040")(type "KiCad")(uri "/Users/ivy/Downloads/ul_RP2040/KiCADv6/RP2040.pretty")(options "")(descr ""))
+)

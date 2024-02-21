@@ -34,9 +34,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 0.5,
-          "height": 0.85,
-          "width": 0.85
+          "drill": 0.762,
+          "height": 1.524,
+          "width": 1.524
         },
         "silk_line_width": 0.15,
         "silk_text_italic": false,
@@ -49,16 +49,13 @@
         }
       },
       "diff_pair_dimensions": [],
-      "drc_exclusions": [
-        "silk_edge_clearance|64000000|93500000|36e128c6-7e91-4428-9245-f1a12070832e|1dd1be42-96ec-4e28-9176-e0d815cbd9d7",
-        "silk_edge_clearance|78000000|93500000|36e128c6-7e91-4428-9245-f1a12070832e|3687f43b-3db7-4c86-8344-3c649274ba64"
-      ],
+      "drc_exclusions": [],
       "meta": {
         "version": 2
       },
       "rule_severities": {
         "annular_width": "error",
-        "clearance": "ignore",
+        "clearance": "error",
         "connection_width": "warning",
         "copper_edge_clearance": "error",
         "copper_sliver": "warning",
@@ -383,7 +380,7 @@
       "pin_to_pin": "warning",
       "power_pin_not_driven": "error",
       "similar_labels": "warning",
-      "simulation_model_issue": "error",
+      "simulation_model_issue": "ignore",
       "unannotated": "error",
       "unit_value_mismatch": "error",
       "unresolved_variable": "error",
@@ -395,7 +392,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "mdrpcb.kicad_pro",
+    "filename": "cdrpcb.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -421,9 +418,7 @@
     "meta": {
       "version": 3
     },
-    "net_colors": {
-      "GND": "rgb(255, 60, 217)"
-    },
+    "net_colors": null,
     "netclass_assignments": null,
     "netclass_patterns": []
   },
@@ -461,7 +456,15 @@
     "meta": {
       "version": 1
     },
-    "net_format_name": "",
+    "net_format_name": "KiCad",
+    "ngspice": {
+      "fix_include_paths": true,
+      "meta": {
+        "version": 0
+      },
+      "model_mode": 0,
+      "workbook_filename": ""
+    },
     "page_layout_descr_file": "",
     "plot_directory": "",
     "spice_current_sheet_as_root": false,
@@ -474,7 +477,7 @@
   },
   "sheets": [
     [
-      "b269f956-f2b9-43e5-ab66-fc68d2dff942",
+      "256b697e-9752-4e3a-a338-bc05701ab36e",
       ""
     ]
   ],
