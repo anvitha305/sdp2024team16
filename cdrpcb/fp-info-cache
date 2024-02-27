@@ -1,4 +1,116 @@
-22650950462072856
+22678295701553488
+25LC1024
+PDIP8_300MC_MCH
+
+25LC1024-I/P 
+0
+0
+0
+Adafruit BNO055
+1X04_ROUND_76
+
+
+0
+4
+4
+Adafruit BNO055
+1X06_ROUND_76
+
+
+0
+6
+6
+Adafruit BNO055
+0805-NO
+
+
+0
+2
+2
+Adafruit BNO055
+0805_10MGAP
+
+
+0
+2
+2
+Adafruit BNO055
+ADAFRUIT_2.5MM
+
+
+0
+0
+0
+Adafruit BNO055
+ADAFRUIT_TEXT_20MM
+
+
+0
+0
+0
+Adafruit BNO055
+BNO055
+
+
+0
+28
+28
+Adafruit BNO055
+CRYSTAL_8X3.8
+<p>8.0x3.8x2.5mm SMT Crystal</p>{return}<p>Source: http://www.abracon.com/Resonators/abs25.pdf</p>
+
+0
+4
+4
+Adafruit BNO055
+FIDUCIAL_1MM
+
+
+0
+1
+1
+Adafruit BNO055
+MOUNTINGHOLE_2.5_PLATED_THICK
+
+
+0
+1
+1
+Adafruit BNO055
+PCBFEAT-REV-040
+<b>Revision Level Field</b> - 40 mil<p>{return}Set version with global board attribute '>REV'
+
+0
+0
+0
+Adafruit BNO055
+SOD-323
+<b>SOD323</b> (2.5x1.2mm)
+
+0
+2
+2
+Adafruit BNO055
+SOT23-5
+<b>Small Outline Transistor</b> - 5 Pin
+
+0
+5
+5
+Adafruit BNO055
+SOT23-WIDE
+
+
+0
+3
+3
+Adafruit BNO055
+_0805MP
+<b>0805 MicroPitch</b>
+
+0
+2
+2
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -62768,6 +62880,13 @@ Yellow 5381 Series LED
 0
 2
 2
+Library
+BNO055_Breakout
+
+
+0
+10
+9
 Module
 A20_OLINUXINO_LIME2
 A20 Olinuxino LIME2, 1.2GHz, 512-1024MB RAM, Micro-SD, NAND or eMMC, 1000Mbit Ethernet
@@ -83705,27 +83824,13 @@ WiFi IEEE802.11 b/g/n
 0
 44
 44
-RP2040
-IC57_RP2040
+RP2040_SC0918
+MODULE_SC0918
 
-RP2040 
-0
-57
-57
-RP2040
-IC57_RP2040-L
 
-RP2040 
 0
-57
-57
-RP2040
-IC57_RP2040-M
-
-RP2040 
-0
-57
-57
+40
+40
 Relay_SMD
 Relay_2P2T_10x6mm_TE_IMxxG
 Signal Relay, 10x6mm, 2 Form C, Gull Wings, https://www.te.com/commerce/DocumentDelivery/DDEController?Action=showdoc&DocId=Data+Sheet%7F108-98001%7FZ.1%7Fpdf%7FEnglish%7FENG_DS_108-98001_Z.1.pdf
@@ -87415,6 +87520,13 @@ Logo WEEE
 0
 0
 0
+TP4056
+TP4056-18650
+
+
+0
+6
+6
 TerminalBlock
 TerminalBlock_Altech_AK300-2_P5.00mm
 Altech AK300 terminal block, pitch 5.0mm, 45 degree angled, see http://www.mouser.com/ds/2/16/PCBMETRC-24178.pdf
