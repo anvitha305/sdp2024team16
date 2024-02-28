@@ -287,7 +287,7 @@
         (stroke (width 0) (type default))
         (fill (type background))
       )
-      (text "BNO055" (at -19.685 3.175 0)
+      (text "BNO055" (at -24.13 6.985 0)
         (effects (font (size 1.27 1.27)))
       )
       (pin power_in line (at -33.655 0 0) (length 2.54)
