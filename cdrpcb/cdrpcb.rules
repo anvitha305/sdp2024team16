@@ -11,7 +11,7 @@
     (via_costs 50)
     (plane_via_costs 5)
     (start_ripup_costs 100)
-    (start_pass_no 4213)
+    (start_pass_no 9284)
     (layer_rule F.Cu
       (active on)
       (preferred_direction horizontal)
@@ -26,14 +26,14 @@
     )
   )
   (rule
-    (width 250.0)
-    (clearance 300.2)
+    (width 400.0)
+    (clearance 400.2)
     (clearance 125.0 (type smd_to_turn_gap))
-    (clearance 300.2 (type smd))
-    (clearance 300.2 (type "kicad_default"))
-    (clearance 300.2 (type 3V3))
-    (clearance 300.2 (type Ground))
-    (clearance 300.2 (type kicad))
+    (clearance 400.2 (type smd))
+    (clearance 400.2 (type "kicad_default"))
+    (clearance 400.2 (type 3V3))
+    (clearance 400.2 (type Ground))
+    (clearance 400.2 (type kicad))
   )
   (padstack "Via[0-1]_800:400_um"
     (shape
@@ -72,7 +72,7 @@
     (clearance_class default)
     (via_rule default)
     (rule
-      (width 250.0)
+      (width 400.0)
     )
     (circuit 
       (use_layer F.Cu B.Cu)
@@ -85,7 +85,7 @@
     "/SPI0_MISO" "/GP7_AD0" "/I2C1_SDA" "/I2C1_SCL" /SWCLK /SWDIO "Net-(SW1-Pin_2)" +3V3
     "Net-(SW2-Pin_2)" "Net-(SW3-Pin_2)" "Net-(SW4-Pin_2)" "Net-(SW5-Pin_2)" "unconnected-(U1-3V3_EN-Pad37)" "unconnected-(U4-B+-Pad2)" "/GP6_INT" "/I2C0_SCL"
     "/I2C0_SDA" "unconnected-(U4-B--Pad3)" "unconnected-(U4-IN+-Pad5)" "unconnected-(U4-IN--Pad6)" "/SPI1_SCK" "/SPI1_MOSI" "/SPI1_MISO" "/SPI1_CS"
-    "unconnected-(U5-*HOLD-Pad7)" /SW3
+    "unconnected-(U5-*HOLD-Pad7)" /SW3 "/GP28_ADC2"
     (clearance_class "kicad_default")
     (via_rule "kicad_default")
     (rule
