@@ -15,13 +15,14 @@
 #define SCREEN_I2C_ADDR 0x3C
 //Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+#define CSPIN      8       // Default Chip Select Line for Uno on the EEPROM (change as needed)
 // Declaration for SSD1306 display connected using software SPI:
 #define OLED_MOSI   9
 #define OLED_CLK   10
 #define OLED_DC    11
 #define OLED_CS    12
 #define OLED_RESET 13
-#define CSPIN      14       // Default Chip Select Line for Uno (change as needed)
+
 
 // Button pins
 #define BUTTON_RED_PIN 5
