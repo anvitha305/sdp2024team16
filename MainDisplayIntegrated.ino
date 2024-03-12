@@ -5,42 +5,27 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
-#include <EEPROMsimple.h>
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 
-// Declaration for SSD1306 display connected using I2C
-#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_I2C_ADDR 0x3C
-//Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
-
-#define OLED_DC    7
-#define OLED_CS    8
-#define OLED_RESET 9
-#define CSPIN      10       // Default Chip Select Line for Uno on the EEPROM (change as needed)
 // Declaration for SSD1306 display connected using software SPI:
-#define OLED_MOSI  11
-#define MISO 12
-#define OLED_CLK   13
-
+#define OLED_DC    12
+#define OLED_CS    5
+#define OLED_RESET 13
+#define OLED_MOSI  3
+#define OLED_CLK   2
 
 // Button pins
-#define BUTTON_RED_PIN 5
-#define BUTTON_YELLOW_PIN 4
-#define BUTTON_BLUE_PIN 3
-#define BUTTON_GREEN_PIN 2
+#define BUTTON_RED_PIN 9
+#define BUTTON_YELLOW_PIN 14
+#define BUTTON_BLUE_PIN 15
+#define BUTTON_GREEN_PIN 16
 
 #define DEBOUNCE_DELAY 100             // ms between accepted button events
 #define PUSH_HOLD_DELAY 1000           // ms to hold button before repeating actions
 #define PUSH_HOLD_REPEAT 50            // ms between repeated actions when holding button
 #define BNO055_SAMPLERATE_DELAY_MS 100 // ms between IMU samples
-
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS); // initialize display class
-EEPROMsimple EEPROM;                                                                                      // initialize EEPROM class
-Adafruit_BNO055 bno = Adafruit_BNO055(55,0x28, &Wire);                                                    // initialize IMU 1 class
-Adafruit_BNO055 bno2 = Adafruit_BNO055(56,0x29, &Wire);                                                   // initialize IMU 2 class
 
 // Button class for debouncing and push-hold
 class Button {
@@ -169,7 +154,6 @@ public:
   }
 };
 
-// Display bitmaps
 const unsigned char epd_bitmap_display_map [] PROGMEM = {
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
   0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 
@@ -516,9 +500,11 @@ const unsigned char* epd_bitmap_allArray[epd_bitmap_allArray_LEN] = {
   epd_bitmap_feet // 34
 };
 
-
-
 // Global Variables
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS); // initialize display class
+Adafruit_BNO055 bno = Adafruit_BNO055(55,0x28, &Wire);                                                    // initialize IMU 1 class
+Adafruit_BNO055 bno2 = Adafruit_BNO055(56,0x29, &Wire);                                                   // initialize IMU 2 class
+
 int mode = 0; // 0 - menu, 1 - target
 Button red_button(BUTTON_RED_PIN);
 Button green_button(BUTTON_GREEN_PIN);
@@ -526,7 +512,7 @@ Button yellow_button(BUTTON_YELLOW_PIN);
 Button blue_button(BUTTON_BLUE_PIN);
 double alpha = 0.5; // ewma coefficient
 unsigned long last_sensor_check;
-Vec3d ewma, ewma2 = {0,0,0};
+Vec3d ewma, ewma2, sensor_mean = {0,0,0};
 
 // Menu Variables
 int selected_param = 0; // 0 - distance, 1 - speed, 2 - units
@@ -535,149 +521,65 @@ int raw_speed = 75; // units / second
 int units = 0; // 0 - meters, 1 - feet
 
 // Target Variables
-float pitch = -90.00;
-float yaw = 360.00;
-float roll = 0.00;
 int battery = 99;
-int arrow_counter = 0;
 int target_x = 32;
 int target_y = 16;
-int roll_dir = 1;
 
 void setup() {
-  display.begin(SSD1306_SWITCHCAPVCC, SCREEN_I2C_ADDR);
+  Wire.setSDA(20);
+  Wire.setSCL(21);
+  Wire.begin();
 
-  Serial.begin(9600); // set communication speed for the serial monitor
+  if(!display.begin(SSD1306_SWITCHCAPVCC)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+
+  Serial.begin(115200); // set communication speed for the serial monitor
+  while (!Serial) delay(10);  // wait for serial port to open!
+
+  if (!bno.begin() || !bno2.begin()){
+    Serial.print("Oops, both BNO055s haven't been detected. ... Check your wiring or I2C ADDR!");
+    while (1);
+  }  
 
   pinMode(BUTTON_RED_PIN, INPUT_PULLUP);
   pinMode(BUTTON_GREEN_PIN, INPUT_PULLUP);
   pinMode(BUTTON_YELLOW_PIN, INPUT_PULLUP);
   pinMode(BUTTON_BLUE_PIN, INPUT_PULLUP);
 
-  while (!Serial) delay(10);  // wait for serial port to open!
-
-  /* Initialise the sensor */
-  if (!bno.begin() || !bno2.begin())
-  {
-    /* There was a problem detecting the BNO055 ... check your connections */
-    Serial.print("Oops, both BNO055s haven't been detected. ... Check your wiring or I2C ADDR!");
-    while (1);
-  }             
-  SPI.begin();                                // start communicating with the memory chip  
-
-  delay(1000); // Delay for SPI
-
-  last_sensor_check = millis();
-
   // Clear the buffer.
   display.clearDisplay();
 }
 
-
-
 void loop() {
-  read_sensors();
+  // put your main code here, to run repeatedly:
 
   read_buttons();
 
-  // Clear the buffer.
-  display.clearDisplay();
   if(mode == 0){
     render_menu();
   }else{
-    render_target();
-  }
-}
+    if (millis()-last_sensor_check > BNO055_SAMPLERATE_DELAY_MS){    
+      display.clearDisplay();           
+      Vec3d sensor_data = read_sensors();   
 
-void read_sensors(){
-  if(millis() - last_sensor_check <= BNO055_SAMPLERATE_DELAY_MS){
-    return;
-  }
+      Serial.print("1- (");
+      Serial.print(sensor_data.x);
+      Serial.print(",");
+      Serial.print(sensor_data.y);
+      Serial.print(",");
+      Serial.print(sensor_data.z);
+      Serial.println(")");
 
-  uint8_t sys, gyro, accel, mag = 0;
-  uint8_t sys2, gyro2, accel2, mag2 = 0;
-  Vec3d s0_1, s0_2 = {0,0,0};
-  uint32_t address = 0;
-  bno.getCalibration(&sys, &gyro, &accel, &mag);
-  bno2.getCalibration(&sys2, &gyro2, &accel2, &mag2);
-
-  sensors_event_t event, event2;
-  bno.getEvent(&event);
-  bno2.getEvent(&event2);
-  
-  // using orientation for this example and can do the same for multiple sensors
-  s0_1 = {360 - (double)event.orientation.x, (double)event.orientation.y, (double)event.orientation.z};
-  s0_2 = {360 - (double)event2.orientation.x, (double)event2.orientation.y, (double)event2.orientation.z};
-  
-  ewma = s0_1.applyEWMA(alpha, ewma);
-  ewma2 = s0_1.applyEWMA(alpha, ewma2);
-  
-  Serial.print(F("Orientation 1: "));
-  Serial.print(ewma.x);
-  Serial.print(F(", "));
-  Serial.print(ewma.y);
-  Serial.print(F(", "));
-  Serial.print(ewma.z);
-  Serial.println(F(""));
-
-
-  Serial.print(F("Orientation 2: "));
-  Serial.print(ewma2.x);
-  Serial.print(F(", "));
-  Serial.print(ewma2.y);
-  Serial.print(F(", "));
-  Serial.print(ewma2.z);
-  Serial.println(F(""));
-
-
-  // showing writing to the max address and loopback for a partition of the EEPROM:
-  if(address < 100*2*sizeof(uint8_t)){
-  Serial.print(F("Calibration Sensor 1: "));
-  Serial.print(sys, DEC);
-  Serial.println(F(""));
-  Serial.print(F("Calibration Sensor 2: "));
-  Serial.print(sys2, DEC);
-  Serial.println(F(""));
-  byte calibrations[2] = {sys, sys2};                                // create variable to hold the data value sent
-  EEPROM.WriteByteArray(address, calibrations, sizeof(calibrations));
-  address += sizeof(calibrations); 
-  }
-  else {
-    address = 0;
-  }
-}
-
-void read_buttons(){
-  if(red_button.shouldTrigger()){
-    mode = (mode+1) % 2;
-    
-  }
-  if(mode == 0){
-    if(blue_button.shouldTrigger()){
-      if(selected_param == 0 && raw_distance > 1){
-        raw_distance--;
-      }else if(selected_param == 1 && raw_speed > 1){
-        raw_speed--;
-      }else if(selected_param == 2){
-        units = (units+1) % 2;
-      }
-    }
-    if(green_button.shouldTrigger()){
-      if(selected_param == 0 && raw_distance < 998){
-        raw_distance++;
-      }else if(selected_param == 1 && raw_speed < 998){
-        raw_speed++;
-      }else if(selected_param == 2){
-        units = (units+1) % 2;
-      }
-    }
-    if(yellow_button.shouldTrigger()){
-      selected_param = (selected_param+1) % 3;
+      render_target(sensor_data);
     }
   }
 }
 
 void render_menu(){
+  display.clearDisplay();
+
   int range_1 = (int) raw_distance / 100;
   int range_2 = (int) (raw_distance/10) % 10;
   int range_3 = (int) raw_distance % 10;
@@ -708,14 +610,84 @@ void render_menu(){
   }else{
     display.drawBitmap(59, 48, epd_bitmap_allArray[34], 24, 10, 1); 
   }
-
   // Load to the display
   display.display();
 }
 
-void render_target(){
-  boolean pitch_neg = pitch < 0;
-  float abs_pitch = pitch_neg ? -pitch : pitch;
+Vec3d read_sensors(){
+  last_sensor_check = millis();
+  uint8_t sys, gyro, accel, mag = 0;
+  uint8_t sys2, gyro2, accel2, mag2 = 0;
+  Vec3d s0_1, s0_2 = {0,0,0};
+  uint32_t address = 0;
+  bno.getCalibration(&sys, &gyro, &accel, &mag);
+  bno2.getCalibration(&sys2, &gyro2, &accel2, &mag2);
+
+  sensors_event_t event, event2;
+  bno.getEvent(&event);
+  bno2.getEvent(&event2);
+  
+  // using orientation for this example and can do the same for multiple sensors
+  s0_1 = {360 - (double)event.orientation.x, (double)event.orientation.y, (double)event.orientation.z};
+  s0_2 = {360 - (double)event2.orientation.x, (double)event2.orientation.y, (double)event2.orientation.z};
+  
+  ewma = s0_1.applyEWMA(alpha, ewma);
+  ewma2 = s0_2.applyEWMA(alpha, ewma2);
+  sensor_mean = ewma.add(ewma2).multiply(0.5);
+
+  // showing writing to the max address and loopback for a partition of the EEPROM:
+  if(address < 100*2*sizeof(uint8_t)){
+  // Serial.print(F("Calibration Sensor 1: "));
+  // Serial.print(sys, DEC);
+  // Serial.println(F(""));
+  // Serial.print(F("Calibration Sensor 2: "));
+  // Serial.print(sys2, DEC);
+  // Serial.println(F(""));
+  byte calibrations[2] = {sys, sys2};                                // create variable to hold the data value sent
+  address += sizeof(calibrations); 
+  }
+  else {
+    address = 0;
+  }
+
+  return Vec3d(sensor_mean.x,sensor_mean.y,sensor_mean.z);
+}
+
+void read_buttons(){
+  if(red_button.shouldTrigger()){
+    mode = (mode+1) % 2;
+  }
+  if(mode == 0){
+    if(blue_button.shouldTrigger()){
+      if(selected_param == 0 && raw_distance > 1){
+        raw_distance--;
+      }else if(selected_param == 1 && raw_speed > 1){
+        raw_speed--;
+      }else if(selected_param == 2){
+        units = (units+1) % 2;
+      }
+    }
+    if(green_button.shouldTrigger()){
+      if(selected_param == 0 && raw_distance < 998){
+        raw_distance++;
+      }else if(selected_param == 1 && raw_speed < 998){
+        raw_speed++;
+      }else if(selected_param == 2){
+        units = (units+1) % 2;
+      }
+    }
+  if(yellow_button.shouldTrigger()){
+      selected_param = (selected_param+1) % 3;
+    }
+  }
+}
+
+void render_target(Vec3d orient){
+  double roll = orient.x;
+  double pitch = orient.y;
+  double yaw = orient.z;
+
+  double abs_pitch = abs(pitch);
   int pitch_1 = (int) abs_pitch / 10;
   int pitch_2 = (int) abs_pitch % 10;
   int pitch_3 = (int) (abs_pitch*10) % 10;
@@ -740,27 +712,37 @@ void render_target(){
     target_drift_y *= -1;
   }
 
-  target_x = (int)(ewma.x * (45.0/180.0) + 60);
-  target_y = (int)(ewma.y * (30.0/180.0) + 62);
+  target_x = (int)(yaw * (45.0/180.0) + 60);
+  target_y = (int)(pitch * (30.0/180.0) + 62);
 
-  boolean left_arrows = arrow_counter%100 >= 0 && arrow_counter%100 < 40;
-  boolean right_arrows = arrow_counter%100 >= 20 && arrow_counter%100 < 60;
-  boolean up_arrows = arrow_counter%100 >= 40 && arrow_counter%100 < 80;
-  boolean down_arrows = arrow_counter%100 >= 60 && arrow_counter%100 < 100;
+  boolean left_arrows = false;
+  boolean right_arrows = false;
+  boolean up_arrows = false;
+  boolean down_arrows = false;
 
   int crosshair_x = 59;
   int crosshair_y = 28;
 
   // Main Background
-  display.drawBitmap(0, 0, epd_bitmap_allArray[10], 128, 64, 1); 
+  display.drawBitmap(0, 0, epd_bitmap_allArray[10], 128, 64, 1);
 
   // Pitch Indicator
-  display.drawBitmap(113, 26, epd_bitmap_allArray[pitch_1], 5, 3, 1);
-  display.drawBitmap(113, 30, epd_bitmap_allArray[pitch_2], 5, 3, 1);
-  display.drawBitmap(113, 36, epd_bitmap_allArray[pitch_3], 5, 3, 1);
-  display.drawBitmap(113, 40, epd_bitmap_allArray[pitch_4], 5, 3, 1);
+  if(pitch_1 >= 0 && pitch_1 <= 9){
+    display.drawBitmap(113, 26, epd_bitmap_allArray[pitch_1], 5, 3, 1);
+  }
+
+  if(pitch_2 >= 0 && pitch_2 <= 9){
+    display.drawBitmap(113, 30, epd_bitmap_allArray[pitch_2], 5, 3, 1);
+  }
+  if(pitch_3 >= 0 && pitch_3 <= 9){
+    display.drawBitmap(113, 36, epd_bitmap_allArray[pitch_3], 5, 3, 1);
+  }
+  if(pitch_4 >= 0 && pitch_4 <= 9){
+    display.drawBitmap(113, 40, epd_bitmap_allArray[pitch_4], 5, 3, 1);
+  }
+  
   // Pitch Sign
-  if(!pitch_neg){
+  if(!pitch > 0){
     display.drawPixel(114,23,1);
     display.drawPixel(116,23,1);
   }
@@ -777,6 +759,7 @@ void render_target(){
     display.drawBitmap(51, 20, epd_bitmap_allArray[19], 25, 25, 1);
   }else{
     int offset = (int) roll;
+    offset = 0;
     display.drawBitmap(61-offset, 42, epd_bitmap_allArray[18], 3, 11, 1);
     display.drawBitmap(61+offset, 12, epd_bitmap_allArray[17], 3, 11, 1);
   }
@@ -815,29 +798,9 @@ void render_target(){
 
   // Load to the display
   display.display();
-
-  pitch += 0.01;
-  if(pitch > 90.00){
-    pitch = -90.00;
-  }
-
-  yaw += 0.01;
-  if(yaw > 360.00){
-    yaw = 0.00;
-  }
-
+  
   battery--;
   if(battery < 0){
     battery = 99;
-  }
-
-  arrow_counter++;
-  if(arrow_counter >= 200){
-    arrow_counter = 0;
-  }
-
-  roll += 0.50*roll_dir;
-  if(roll < -50 || roll > 50){
-    roll_dir *= -1;
   }
 }
