@@ -1,0 +1,19 @@
+Collated Components for CDRPCB:,,,
+,,,
+Item,Qty,Reference(s),Value
+1,5,"C1, C2, C3, C4, C5",100nF
+2,3,"D1, D2, D3",LED
+3,1,J1,Conn_02x04_Odd_Even
+4,4,"J2, J3, J4, J5",Conn_01x03
+5,1,J7,Conn_01x06
+6,1,J8,Conn_01x04
+7,3,"R1, R2, R3",330
+8,5,"R4, R6, R8, R10, R13",100
+9,5,"R5, R7, R9, R11, R12",10k
+10,1,R14,3.3k
+11,1,R15,1k
+12,5,"SW1, SW2, SW3, SW4, SW5",Conn_01x02_Pin
+13,1,U1,SC0918
+14,2,"U2, U3",~
+15,1,U4,~
+16,1,U5,25LC1024-I/P
