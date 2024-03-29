@@ -55,7 +55,21 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        "clearance|109757800|83135700|0334fa41-66cd-429c-9e6e-57d0568ff1fc|79cb8892-d28b-42c5-a262-e14587a7ddfd",
+        "clearance|109757800|83135700|79cb8892-d28b-42c5-a262-e14587a7ddfd|0334fa41-66cd-429c-9e6e-57d0568ff1fc",
+        "clearance|109757800|83435000|79cb8892-d28b-42c5-a262-e14587a7ddfd|0334fa41-66cd-429c-9e6e-57d0568ff1fc",
+        "clearance|94653800|101460400|ccb49876-1397-4dee-ace3-7f33068aeaf6|ffd2b24a-1209-4056-bd24-7db30d417ec7",
+        "clearance|94653800|95910400|41119f44-bbc0-4c40-a588-ebd555f89ad2|bf2ba6bf-039b-417c-8727-3ba52f5a07f8",
+        "items_not_allowed|121923869|132063822|ca00095e-cb78-4ec3-bfd3-0af3543e15f2|00000000-0000-0000-0000-000000000000",
+        "items_not_allowed|121988204|110338545|09b1b192-3c18-49fd-9d2e-0e7aef42a8fe|00000000-0000-0000-0000-000000000000",
+        "items_not_allowed|137482204|110338545|530c8cab-4011-417a-aa56-e236d951613d|00000000-0000-0000-0000-000000000000",
+        "items_not_allowed|137636846|132055233|911c3299-ed49-427f-93f0-17aa10f36e69|00000000-0000-0000-0000-000000000000",
+        "items_not_allowed|152356969|132063822|880335d1-0e2e-4561-a38d-50860c7bf2c4|00000000-0000-0000-0000-000000000000",
+        "items_not_allowed|152421304|110338545|480387b4-c21f-41a9-beb4-b918f08bbbaa|00000000-0000-0000-0000-000000000000",
+        "items_not_allowed|167915304|110338545|2db453e2-9dc1-4dfd-bccb-0bdd10a57147|00000000-0000-0000-0000-000000000000",
+        "items_not_allowed|168069946|132055233|103be524-e1ba-4d47-8cb8-bac27bee8327|00000000-0000-0000-0000-000000000000"
+      ],
       "meta": {
         "version": 2
       },
@@ -475,6 +489,23 @@
         "line_style": 0,
         "microvia_diameter": 0.3,
         "microvia_drill": 0.1,
+        "name": "Power",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.4,
+        "via_diameter": 0.8,
+        "via_drill": 0.4,
+        "wire_width": 6
+      },
+      {
+        "bus_width": 12,
+        "clearance": 0.4,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
         "name": "VSYS",
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
@@ -487,7 +518,9 @@
     "meta": {
       "version": 3
     },
-    "net_colors": null,
+    "net_colors": {
+      "+3.3V": "rgb(255, 208, 1)"
+    },
     "netclass_assignments": null,
     "netclass_patterns": [
       {
@@ -497,6 +530,26 @@
       {
         "netclass": "VSYS",
         "pattern": "+5V"
+      },
+      {
+        "netclass": "3V3",
+        "pattern": "+3V3"
+      },
+      {
+        "netclass": "VSYS",
+        "pattern": "VSYS"
+      },
+      {
+        "netclass": "VSYS",
+        "pattern": "VBUS"
+      },
+      {
+        "netclass": "VSYS",
+        "pattern": "/B+"
+      },
+      {
+        "netclass": "VSYS",
+        "pattern": "/B-"
       }
     ]
   },
@@ -505,7 +558,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "specctra_dsn": "cdrpcb.dsn",
+      "specctra_dsn": "fprpcb.dsn",
       "step": "",
       "vrml": ""
     },

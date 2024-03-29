@@ -1,0 +1,154 @@
+
+(rules PCB fprpcb
+  (snap_angle 
+    fortyfive_degree
+  )
+  (autoroute_settings
+    (fanout off)
+    (autoroute on)
+    (postroute on)
+    (vias on)
+    (via_costs 50)
+    (plane_via_costs 5)
+    (start_ripup_costs 100)
+    (start_pass_no 2466)
+    (layer_rule F.Cu
+      (active on)
+      (preferred_direction horizontal)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 2.3)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.8)
+    )
+  )
+  (rule
+    (width 250.0)
+    (clearance 300.2)
+    (clearance 125.0 (type smd_to_turn_gap))
+    (clearance 300.2 (type smd))
+    (clearance 300.2 (type "kicad_default"))
+    (clearance 300.2 (type 3V3))
+    (clearance 300.2 (type Ground))
+    (clearance 300.2 (type Power))
+    (clearance 300.2 (type VSYS))
+    (clearance 300.2 (type kicad))
+  )
+  (padstack "Via[0-1]_800:400_um"
+    (shape
+      (circle F.Cu 800.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 800.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (via 
+    "Via[0-1]_800:400_um-Power" "Via[0-1]_800:400_um" Power
+  )
+  (via 
+    "Via[0-1]_800:400_um" "Via[0-1]_800:400_um" default
+  )
+  (via 
+    "Via[0-1]_800:400_um-kicad_default" "Via[0-1]_800:400_um" "kicad_default"
+  )
+  (via 
+    "Via[0-1]_800:400_um-3V3" "Via[0-1]_800:400_um" 3V3
+  )
+  (via 
+    "Via[0-1]_800:400_um-Ground" "Via[0-1]_800:400_um" Ground
+  )
+  (via 
+    "Via[0-1]_800:400_um-VSYS" "Via[0-1]_800:400_um" VSYS
+  )
+  (via_rule
+    Power "Via[0-1]_800:400_um-Power"
+  )
+  (via_rule
+    default "Via[0-1]_800:400_um"
+  )
+  (via_rule
+    "kicad_default" "Via[0-1]_800:400_um-kicad_default"
+  )
+  (via_rule
+    3V3 "Via[0-1]_800:400_um-3V3"
+  )
+  (via_rule
+    Ground "Via[0-1]_800:400_um-Ground"
+  )
+  (via_rule
+    VSYS "Via[0-1]_800:400_um-VSYS"
+  )
+  (class default
+    (clearance_class default)
+    (via_rule default)
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "kicad_default"
+    /RST GND /SW0 /SW1 /SW2 "Net-(D1-K)" "Net-(D2-K)" /LED0
+    "Net-(D3-K)" /LED1 VBUS "/GP0_UART0_TX" "/GP1_UART0_RX" "/GP8_UART1_TX" VDDA "/GP26_ADC0"
+    GNDA "/GP27_ADC1" "/SPI0_CS" "/SPI0_SCK" "/SPI0_MOSI" "/SPI0_MISO" "/GP7_AD0" "/I2C1_SDA"
+    "/I2C1_SCL" "Net-(SW1-Pin_2)" +3V3 "Net-(SW2-Pin_2)" "Net-(SW3-Pin_2)" "Net-(SW4-Pin_2)" "Net-(SW5-Pin_2)" "unconnected-(U1-3V3_EN-Pad37)"
+    "/GP6_INT" "/I2C0_SCL" "/I2C0_SDA" "unconnected-(U4-IN+-Pad5)" "unconnected-(U4-IN--Pad6)" "/SPI1_SCK" "/SPI1_MOSI" "/SPI1_MISO"
+    "/SPI1_CS" "unconnected-(U5-*HOLD-Pad7)" /SW3 "/GP28_ADC2" "unconnected-(U2-INT-Pad9)" "unconnected-(U3-INT-Pad9)" "Net-(SW6-Pin_2)" /B+
+    "/B-"
+    (clearance_class "kicad_default")
+    (via_rule "kicad_default")
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class 3V3
+    +3.3V
+    (clearance_class 3V3)
+    (via_rule 3V3)
+    (rule
+      (width 400.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class Ground
+    (clearance_class Ground)
+    (via_rule Ground)
+    (rule
+      (width 400.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class Power
+    (clearance_class Power)
+    (via_rule Power)
+    (rule
+      (width 400.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class VSYS
+    +5V
+    (clearance_class VSYS)
+    (via_rule VSYS)
+    (rule
+      (width 400.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+)
