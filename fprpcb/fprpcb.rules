@@ -11,7 +11,7 @@
     (via_costs 50)
     (plane_via_costs 5)
     (start_ripup_costs 100)
-    (start_pass_no 2466)
+    (start_pass_no 2469)
     (layer_rule F.Cu
       (active on)
       (preferred_direction horizontal)
@@ -98,8 +98,7 @@
     GNDA "/GP27_ADC1" "/SPI0_CS" "/SPI0_SCK" "/SPI0_MOSI" "/SPI0_MISO" "/GP7_AD0" "/I2C1_SDA"
     "/I2C1_SCL" "Net-(SW1-Pin_2)" +3V3 "Net-(SW2-Pin_2)" "Net-(SW3-Pin_2)" "Net-(SW4-Pin_2)" "Net-(SW5-Pin_2)" "unconnected-(U1-3V3_EN-Pad37)"
     "/GP6_INT" "/I2C0_SCL" "/I2C0_SDA" "unconnected-(U4-IN+-Pad5)" "unconnected-(U4-IN--Pad6)" "/SPI1_SCK" "/SPI1_MOSI" "/SPI1_MISO"
-    "/SPI1_CS" "unconnected-(U5-*HOLD-Pad7)" /SW3 "/GP28_ADC2" "unconnected-(U2-INT-Pad9)" "unconnected-(U3-INT-Pad9)" "Net-(SW6-Pin_2)" /B+
-    "/B-"
+    "/SPI1_CS" "unconnected-(U5-*HOLD-Pad7)" /SW3 "/GP28_ADC2" "unconnected-(U2-INT-Pad9)" "unconnected-(U3-INT-Pad9)" /B+ "/B-"
     (clearance_class "kicad_default")
     (via_rule "kicad_default")
     (rule
