@@ -34,9 +34,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 4.5,
-          "height": 5.0,
-          "width": 5.0
+          "drill": 0.7,
+          "height": 1.4,
+          "width": 1.4
         },
         "silk_line_width": 0.15,
         "silk_text_italic": false,
@@ -202,11 +202,7 @@
     "equivalence_files": []
   },
   "erc": {
-    "erc_exclusions": [
-      "label_dangling|933450|400050|a4f4d1a0-5d92-45d1-bab9-d39a58453c7d|00000000-0000-0000-0000-000000000000|||",
-      "label_dangling|971550|425450|58ff6e00-93e7-465f-9636-c05b69a519a5|00000000-0000-0000-0000-000000000000|||",
-      "pin_not_driven|882650|400050|4e47975d-a1c6-41cb-a4e3-4f217ddc2d2b|00000000-0000-0000-0000-000000000000|||"
-    ],
+    "erc_exclusions": [],
     "meta": {
       "version": 0
     },
@@ -525,8 +521,8 @@
         "pattern": "+3.3V"
       },
       {
-        "netclass": "VSYS",
-        "pattern": "+5V"
+        "netclass": "3V3",
+        "pattern": "VSYS"
       },
       {
         "netclass": "3V3",
@@ -534,19 +530,23 @@
       },
       {
         "netclass": "VSYS",
-        "pattern": "VSYS"
-      },
-      {
-        "netclass": "VSYS",
         "pattern": "VBUS"
       },
       {
-        "netclass": "VSYS",
+        "netclass": "Power",
         "pattern": "/B+"
       },
       {
         "netclass": "VSYS",
         "pattern": "/B-"
+      },
+      {
+        "netclass": "Default",
+        "pattern": "/SW3"
+      },
+      {
+        "netclass": "3V3",
+        "pattern": "Out+"
       }
     ]
   },
