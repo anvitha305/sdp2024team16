@@ -1,0 +1,29 @@
+Source:,C:\Users\Anvitha\source\repos\anvitha305\sdp2024team16\fprpcb\fprpcb.kicad_sch,,
+Date:,04/10/24 13:18,,
+Tool:,Eeschema (7.0.0),,
+Generator:,C:\Program Files\KiCad\7.0\bin\scripting\plugins/bom_csv_grouped_by_value.py,,
+Component Count:,46,,
+,,,
+Collated Components:,,,
+,,,
+Item,Qty,Reference(s),Value
+1,5,"C1, C2, C3, C4, C5",100nF
+2,1,C6,100n
+3,1,C7,1u
+4,3,"D1, D2, D3",LED
+5,2,"H1, H2",MountingHole
+6,1,J1,Conn_02x04_Odd_Even
+7,1,J2,Conn_01x02
+8,4,"J3, J4, J5, J6",Conn_01x03
+9,1,J7,Conn_01x06
+10,1,J8,Conn_01x04
+11,3,"R1, R2, R3",330
+12,5,"R4, R6, R8, R10, R13",100
+13,5,"R5, R7, R9, R11, R12",10k
+14,1,R14,3.3k
+15,1,R15,1k
+16,6,"SW1, SW2, SW3, SW4, SW5, SW6",Conn_01x02_Pin
+17,1,U1,SC0918
+18,2,"U2, U3",~
+19,1,U4,~
+20,1,U5,25LC1024-I/P
