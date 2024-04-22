@@ -8,24 +8,28 @@
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define DISPLAY_DIST 155.0
+#define DISPLAY_HEIGHT 35.05 
+#define DISPLAY_WIDTH 15.32
 
 // Declaration for SSD1306 display connected using software SPI:
-#define OLED_DC    12
+#define OLED_DC    0
 #define OLED_CS    5
-#define OLED_RESET 13
+#define OLED_RESET 1
 #define OLED_MOSI  3
 #define OLED_CLK   2
 
 // Button pins
-#define BUTTON_RED_PIN 9
-#define BUTTON_YELLOW_PIN 14
-#define BUTTON_BLUE_PIN 15
-#define BUTTON_GREEN_PIN 16
+#define BUTTON_TOP_PIN 9
+#define BUTTON_MIDTOP_PIN 16
+#define BUTTON_MIDBOT_PIN 14
+#define BUTTON_BOTTOM_PIN 15
 
 #define DEBOUNCE_DELAY 100             // ms between accepted button events
 #define PUSH_HOLD_DELAY 1000           // ms to hold button before repeating actions
 #define PUSH_HOLD_REPEAT 50            // ms between repeated actions when holding button
 #define BNO055_SAMPLERATE_DELAY_MS 100 // ms between IMU samples
+
 
 // Button class for debouncing and push-hold
 class Button {
@@ -64,93 +68,181 @@ public:
   }
 };
 
-class Vec3d {
+class Vec3f {
 public:
-  double x, y, z;
-  Vec3d() : x(0), y(0), z(0) {}
+  float x, y, z;
+  Vec3f() : x(0), y(0), z(0) {}
 
 
-  Vec3d(double x, double y, double z) {
+  Vec3f(float x, float y, float z) {
     this->x = x;
     this->y = y;
     this->z = z;
   }
 
-  Vec3d add(Vec3d other) {
-    return Vec3d(x + other.x, y + other.y, z + other.z);
+  Vec3f add(Vec3f other) {
+    return Vec3f(x + other.x, y + other.y, z + other.z);
   }
 
-  Vec3d subtract(Vec3d other) {
-    return Vec3d(x - other.x, y - other.y, z - other.z);
+  Vec3f subtract(Vec3f other) {
+    return Vec3f(x - other.x, y - other.y, z - other.z);
   }
 
-  Vec3d multiply(double scalar) {
-    double newX = x * scalar;
-    double newY = y * scalar;
-    double newZ = z * scalar;
+  Vec3f multiply(float scalar) {
+    float newX = x * scalar;
+    float newY = y * scalar;
+    float newZ = z * scalar;
 
-    return Vec3d(newX, newY, newZ);
+    return Vec3f(newX, newY, newZ);
   }
 
-  Vec3d cross(Vec3d other) {
-    double newX = y * other.z - z * other.y;
-    double newY = z * other.x - x * other.z;
-    double newZ = x * other.y - y * other.x;
+  Vec3f cross(Vec3f other) {
+    float newX = y * other.z - z * other.y;
+    float newY = z * other.x - x * other.z;
+    float newZ = x * other.y - y * other.x;
 
-    return Vec3d(newX, newY, newZ);
+    return Vec3f(newX, newY, newZ);
   }
 
-  double dot(Vec3d other) {
+  float dot(Vec3f other) {
     return x * other.x + y * other.y + z * other.z;
   }
 
-  Vec3d normalize() {
-    double magnitude = sqrt(x * x + y * y + z * z);
+  Vec3f normalize() {
+    float magnitude = sqrt(x * x + y * y + z * z);
 
     // Check for division by zero
     if (magnitude == 0) {
       // Handle the error as needed
     }
 
-    double newX = x / magnitude;
-    double newY = y / magnitude;
-    double newZ = z / magnitude;
+    float newX = x / magnitude;
+    float newY = y / magnitude;
+    float newZ = z / magnitude;
 
-    return Vec3d(newX, newY, newZ);
+    return Vec3f(newX, newY, newZ);
   }
 
-  double length() {
+  float length() {
     return sqrt(x * x + y * y + z * z);
   }
 
-  double lengthSquared() {
+  float lengthSquared() {
     return x * x + y * y + z * z;
   }
 
-  Vec3d project(Vec3d other) {
-    double dotProduct = this->dot(other);
-    double uMagnitudeSquared = other.lengthSquared();
+  Vec3f project(Vec3f other) {
+    float dotProduct = this->dot(other);
+    float uMagnitudeSquared = other.lengthSquared();
 
     // Check for division by zero
     if (uMagnitudeSquared == 0) {
       // Handle the error as needed
     }
 
-    double scalar = dotProduct / uMagnitudeSquared;
+    float scalar = dotProduct / uMagnitudeSquared;
 
     return other.multiply(scalar);
   }
 
-  Vec3d applyEWMA(double alpha, Vec3d ewma){
-    return Vec3d(x*alpha + (1-alpha)*ewma.x,y*alpha + (1-alpha)*ewma.y,z*alpha + (1-alpha)*ewma.z);
+  Vec3f applyEWMA(float alpha, Vec3f ewma){
+    return Vec3f(x*alpha + (1-alpha)*ewma.x,y*alpha + (1-alpha)*ewma.y,z*alpha + (1-alpha)*ewma.z);
+  }
+
+  Vec3f applyCircAvg(Vec3f data2){
+    Serial.print("2- (");
+      Serial.print(data2.x);
+      Serial.print(",");
+      Serial.print(data2.y);
+      Serial.print(",");
+      Serial.print(data2.z);
+      Serial.println(")");
+
+    float diffx = max(x, data2.x) - min(x, data2.x);
+    float x_val, y_val,z_val = 0;
+    if (diffx > 180){
+        x_val = fmod(((min(x, data2.x) + 360 + max(x,data2.x))/2), 360); // adjust x val for the smaller val to be shifted by 360 so that the averaging is a directional/circular average
+    }
+    
+    else{
+       x_val = fmod((x + data2.x)/2.0, 360); // ordinary average
+    }
+    float diffy = y - data2.y;
+    if (diffy > 180){
+         diffy -= 360; // make sure it's in the range -180, 180 for the averaging
+    }
+    if (diffy < -180){
+         diffy += 360;
+    }
+    y_val = fmod((y + diffy)/2.0 + 180, 360) - 180;
+    //repeat it all for z
+    float diffz = z - data2.z;
+    if (diffz > 180){
+         diffz -= 360;
+    }
+    if (diffz < -180){
+         diffz += 360;
+    }
+    z_val = fmod((z + diffz)/2.0 + 180, 360) - 180;
+    return Vec3f(x_val, y_val, z_val);
   }
 
   String toString() {
     return "(" + String(x) + ", " + String(y) + ", " + String(z) + ")";
   }
 
-  bool operator!=(const Vec3d &other) const {
+  bool operator!=(const Vec3f &other) const {
     return x != other.x || y != other.y || z != other.z;
+  }
+};
+
+class Quaternion {
+public:
+  float w, x, y, z;
+  Quaternion() : w(1), x(0), y(0), z(0) {}
+
+  Quaternion(float w, float x, float y, float z) {
+    this->w = w;
+    this->x = x;
+    this->y = y;
+    this->z = z;
+  }
+
+  Quaternion(Vec3f axis, float angleDeg){
+    float angle = (angleDeg * 71.0) / 4068.0;
+    float axisX = axis.x;
+    float axisY = axis.y;
+    float axisZ = axis.z;
+         
+    float hangle = angle / 2.0f;
+    float sinAngle = sin(hangle);
+    float vLength = sqrt(axisX * axisX + axisY * axisY + axisZ * axisZ);
+    this->w = cos(hangle); 
+    this->x = axisX / vLength * sinAngle;
+    this->y = axisY / vLength * sinAngle;
+    this->z = axisZ / vLength * sinAngle;
+  }
+
+  Quaternion mul(Quaternion q) {
+    float tempW = (this->w * q.x + (this->x * q.w + (this->y * q.z + (-this->z * q.y))));
+    float tempX = (this->w * q.y + (-this->x * q.z + (this->y * q.w + (this->z * q.x))));
+    float tempY = (this->w * q.z + (this->x * q.y + (-this->y * q.x + (this->z * q.w))));
+    float tempZ = (this->w * q.w + (-this->x * q.x + (-this->y * q.y + (-this->z * q.z))));
+    return Quaternion(tempW,tempX,tempY,tempZ);
+  }
+
+  Vec3f transform(Vec3f vec){
+    return transform(vec.x, vec.y, vec.z, vec);
+  }
+      
+  Vec3f transform(float x, float y, float z, Vec3f dest) {
+    float xx = this->x * this->x, yy = this->y * this->y, zz = this->z * this->z, ww = this->w * this->w;
+    float xy = this->x * this->y, xz = this->x * this->z, yz = this->y * this->z, xw = this->x * this->w;
+    float zw = this->z * this->w, yw = this->y * this->w, k = 1 / (xx + yy + zz + ww);
+    dest.x = ((xx - yy - zz + ww) * k * x + (2 * (xy - zw) * k * y + ((2 * (xz + yw) * k) * z)));
+    dest.y = (2 * (xy + zw) * k * x + ((yy - xx - zz + ww) * k * y + ((2 * (yz - xw) * k) * z)));
+    dest.z = (2 * (xz - yw) * k * x + (2 * (yz + xw) * k * y + (((zz - xx - yy + ww) * k) * z)));
+    return dest;
   }
 };
 
@@ -505,14 +597,15 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI, OLED_CLK, OLED_
 Adafruit_BNO055 bno = Adafruit_BNO055(55,0x28, &Wire);                                                    // initialize IMU 1 class
 Adafruit_BNO055 bno2 = Adafruit_BNO055(56,0x29, &Wire);                                                   // initialize IMU 2 class
 
-int mode = 0; // 0 - menu, 1 - target
-Button red_button(BUTTON_RED_PIN);
-Button green_button(BUTTON_GREEN_PIN);
-Button yellow_button(BUTTON_YELLOW_PIN);
-Button blue_button(BUTTON_BLUE_PIN);
-double alpha = 0.5; // ewma coefficient
+int mode = 1; // 0 - menu, 1 - target
+Button top_button(BUTTON_TOP_PIN);
+Button bottom_button(BUTTON_BOTTOM_PIN);
+Button midtop_button(BUTTON_MIDTOP_PIN);
+Button midbot_button(BUTTON_MIDBOT_PIN);
+float alpha = 0.5; // ewma coefficient
 unsigned long last_sensor_check;
-Vec3d ewma, ewma2, sensor_mean = {0,0,0};
+Vec3f sensor_avg_1, sensor_avg_2, sensor_mean = {0,0,0};
+Vec3f sensor_data = {0,0,0};
 
 // Menu Variables
 int selected_param = 0; // 0 - distance, 1 - speed, 2 - units
@@ -522,31 +615,41 @@ int units = 0; // 0 - meters, 1 - feet
 
 // Target Variables
 int battery = 99;
-int target_x = 32;
-int target_y = 16;
+int target_x = 64;
+int target_y = 32;
+Vec3f target_point = {0,0,0};
+
+// Alignment Offsets
+float pitch_offset = 0;
+float yaw_offset = 0;
+float roll_offset = 90;
 
 void setup() {
   Wire.setSDA(20);
   Wire.setSCL(21);
   Wire.begin();
 
+  Serial.begin(115200); // set communication speed for the serial monitor
+  while (!Serial) delay(10);  // wait for serial port to open!
+
+  Serial.println(F("Booting"));
+
   if(!display.begin(SSD1306_SWITCHCAPVCC)) {
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
-
-  Serial.begin(115200); // set communication speed for the serial monitor
-  while (!Serial) delay(10);  // wait for serial port to open!
 
   if (!bno.begin() || !bno2.begin()){
     Serial.print("Oops, both BNO055s haven't been detected. ... Check your wiring or I2C ADDR!");
     while (1);
   }  
 
-  pinMode(BUTTON_RED_PIN, INPUT_PULLUP);
-  pinMode(BUTTON_GREEN_PIN, INPUT_PULLUP);
-  pinMode(BUTTON_YELLOW_PIN, INPUT_PULLUP);
-  pinMode(BUTTON_BLUE_PIN, INPUT_PULLUP);
+  Serial.println(F("Peripherals Loaded"));
+
+  pinMode(BUTTON_TOP_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_BOTTOM_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_MIDTOP_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_MIDBOT_PIN, INPUT_PULLUP);
 
   // Clear the buffer.
   display.clearDisplay();
@@ -562,7 +665,7 @@ void loop() {
   }else{
     if (millis()-last_sensor_check > BNO055_SAMPLERATE_DELAY_MS){    
       display.clearDisplay();           
-      Vec3d sensor_data = read_sensors();   
+      sensor_data = read_sensors();   
 
       Serial.print("1- (");
       Serial.print(sensor_data.x);
@@ -572,7 +675,7 @@ void loop() {
       Serial.print(sensor_data.z);
       Serial.println(")");
 
-      render_target(sensor_data);
+      render_target();
     }
   }
 }
@@ -614,11 +717,11 @@ void render_menu(){
   display.display();
 }
 
-Vec3d read_sensors(){
+Vec3f read_sensors(){
   last_sensor_check = millis();
   uint8_t sys, gyro, accel, mag = 0;
   uint8_t sys2, gyro2, accel2, mag2 = 0;
-  Vec3d s0_1, s0_2 = {0,0,0};
+  Vec3f s0_1, s0_2 = {0,0,0};
   uint32_t address = 0;
   bno.getCalibration(&sys, &gyro, &accel, &mag);
   bno2.getCalibration(&sys2, &gyro2, &accel2, &mag2);
@@ -628,12 +731,12 @@ Vec3d read_sensors(){
   bno2.getEvent(&event2);
   
   // using orientation for this example and can do the same for multiple sensors
-  s0_1 = {360 - (double)event.orientation.x, (double)event.orientation.y, (double)event.orientation.z};
-  s0_2 = {360 - (double)event2.orientation.x, (double)event2.orientation.y, (double)event2.orientation.z};
+  s0_1 = {360 - (float)event.orientation.x, (float)event.orientation.y, (float)event.orientation.z};
+  s0_2 = {360 - (float)event2.orientation.x, (float)event2.orientation.y, (float)event2.orientation.z};
   
-  ewma = s0_1.applyEWMA(alpha, ewma);
-  ewma2 = s0_2.applyEWMA(alpha, ewma2);
-  sensor_mean = ewma.add(ewma2).multiply(0.5);
+  sensor_avg_1 = s0_1.applyCircAvg(sensor_avg_1);
+  sensor_avg_2 = s0_2.applyCircAvg(sensor_avg_2);
+  sensor_mean = sensor_avg_1.applyCircAvg(sensor_avg_2);
 
   // showing writing to the max address and loopback for a partition of the EEPROM:
   if(address < 100*2*sizeof(uint8_t)){
@@ -650,15 +753,15 @@ Vec3d read_sensors(){
     address = 0;
   }
 
-  return Vec3d(sensor_mean.x,sensor_mean.y,sensor_mean.z);
+  return Vec3f(sensor_mean.x,sensor_mean.y,sensor_mean.z);
 }
 
 void read_buttons(){
-  if(red_button.shouldTrigger()){
+  if(bottom_button.shouldTrigger()){
     mode = (mode+1) % 2;
   }
   if(mode == 0){
-    if(blue_button.shouldTrigger()){
+    if(midbot_button.shouldTrigger()){
       if(selected_param == 0 && raw_distance > 1){
         raw_distance--;
       }else if(selected_param == 1 && raw_speed > 1){
@@ -667,7 +770,7 @@ void read_buttons(){
         units = (units+1) % 2;
       }
     }
-    if(green_button.shouldTrigger()){
+    if(midtop_button.shouldTrigger()){
       if(selected_param == 0 && raw_distance < 998){
         raw_distance++;
       }else if(selected_param == 1 && raw_speed < 998){
@@ -676,18 +779,47 @@ void read_buttons(){
         units = (units+1) % 2;
       }
     }
-  if(yellow_button.shouldTrigger()){
+    if(top_button.shouldTrigger()){
       selected_param = (selected_param+1) % 3;
+    }
+  }else if(mode == 1){
+    if(midbot_button.shouldTrigger()){
+      float pitch = 0;
+      float yaw = 0;
+      float f = (pitch * 71.0) / 4068.0;
+      float g = (-yaw * 71.0) / 4068.0;
+      float h = cos(g);
+      float i = sin(g);
+      float j = cos(f);
+      float k = sin(f);
+
+      Vec3f cameraVec3f = Vec3f(i * j, -k, h * j);
+      float dist_mm = raw_distance * 1000;
+      if(units == 1){
+        dist_mm *= 0.3048;
+      }
+
+      target_point = cameraVec3f.multiply(dist_mm);
+    }
+    if(top_button.shouldTrigger()){
+      yaw_offset = sensor_data.x;
+      pitch_offset = sensor_data.y;
+    }
+    if(midtop_button.shouldTrigger()){
+      
     }
   }
 }
 
-void render_target(Vec3d orient){
-  double roll = orient.x;
-  double pitch = orient.y;
-  double yaw = orient.z;
+void render_target(){
+  float roll = sensor_data.z - roll_offset;
+  float pitch = -(sensor_data.y - pitch_offset);
+  float yaw = sensor_data.x - yaw_offset;
+  if(yaw < 0){
+    yaw += 360;
+  }
 
-  double abs_pitch = abs(pitch);
+  float abs_pitch = abs(pitch);
   int pitch_1 = (int) abs_pitch / 10;
   int pitch_2 = (int) abs_pitch % 10;
   int pitch_3 = (int) (abs_pitch*10) % 10;
@@ -702,23 +834,17 @@ void render_target(Vec3d orient){
   int battery_1 = battery / 10;
   int battery_2 = battery % 10;
 
-  int target_drift_x = random(5)-2;
-  int target_drift_y = random(5)-2;
-  if(target_x+target_drift_x > 110 || target_x+target_drift_x < 10){
-    target_drift_x *= -1;
+  float adjusted_yaw = yaw;
+  if(yaw > 180){
+    adjusted_yaw = yaw-360;
   }
-
-  if(target_y+target_drift_y > 63 || target_y+target_drift_y < 1){
-    target_drift_y *= -1;
-  }
-
-  target_x = (int)(yaw * (45.0/180.0) + 60);
+  target_x = (int)(adjusted_yaw * (45.0/180.0) + 60);
   target_y = (int)(pitch * (30.0/180.0) + 62);
 
-  boolean left_arrows = false;
-  boolean right_arrows = false;
-  boolean up_arrows = false;
-  boolean down_arrows = false;
+  boolean left_arrows = target_y < 3;
+  boolean right_arrows = target_y > 66;
+  boolean up_arrows = target_x > 130;
+  boolean down_arrows = target_x < 3;
 
   int crosshair_x = 59;
   int crosshair_y = 28;
@@ -742,7 +868,7 @@ void render_target(Vec3d orient){
   }
   
   // Pitch Sign
-  if(!pitch > 0){
+  if(pitch > 0){
     display.drawPixel(114,23,1);
     display.drawPixel(116,23,1);
   }
@@ -759,7 +885,6 @@ void render_target(Vec3d orient){
     display.drawBitmap(51, 20, epd_bitmap_allArray[19], 25, 25, 1);
   }else{
     int offset = (int) roll;
-    offset = 0;
     display.drawBitmap(61-offset, 42, epd_bitmap_allArray[18], 3, 11, 1);
     display.drawBitmap(61+offset, 12, epd_bitmap_allArray[17], 3, 11, 1);
   }
@@ -794,7 +919,9 @@ void render_target(Vec3d orient){
   display.drawBitmap(crosshair_x,crosshair_y, epd_bitmap_allArray[12], 9, 9, 1);
 
   // Target Marker
-  display.drawBitmap(target_x-3,target_y-3, epd_bitmap_allArray[11], 7, 7, 1);
+  if(target_x > 3 && target_x < 130 && target_y > 3 && target_y < 66){
+    display.drawBitmap(target_x-3,target_y-3, epd_bitmap_allArray[11], 7, 7, 1);
+  }
 
   // Load to the display
   display.display();
@@ -803,4 +930,102 @@ void render_target(Vec3d orient){
   if(battery < 0){
     battery = 99;
   }
+}
+
+Vec3f findIntersection(Vec3f point, Vec3f screen1, Vec3f screen2, Vec3f screen3, Vec3f origin) {
+  Vec3f planeNormal = screen2.subtract(screen1).cross(screen3.subtract(screen1)).normalize();
+  Vec3f lineDirection = point.subtract(origin).normalize();
+
+  float dotProduct = planeNormal.dot(lineDirection);
+
+  if (abs(dotProduct) < 1e-6) {
+    // The line is parallel to the plane, no intersection
+    //Serial.println("Parallel!");
+    return Vec3f(0xCAFE, 0xCAFE, 0xCAFE);
+  }
+
+  float t = (planeNormal.dot(screen1) - planeNormal.dot(origin)) / dotProduct;
+
+  if (t < 0 || t / point.length() > 1) {
+    // The intersection point is outside the line segment
+    //Serial.println("Out of Line Bounds " + String(t) + " | " + String(t / point.length()));
+    return Vec3f(0xCAFE, 0xCAFE, 0xCAFE);
+  }
+
+  Vec3f intersectionPoint = origin.add(lineDirection.multiply(t));
+
+  Vec3f uvVec = intersectionPoint.subtract(screen2);
+  Vec3f uAxis = screen3.subtract(screen2);
+  Vec3f vAxis = screen1.subtract(screen2);
+  Vec3f uVec = uvVec.project(uAxis);
+  Vec3f vVec = uvVec.project(vAxis);
+
+  float u = uVec.length() / uAxis.length();
+  float v = vVec.length() / vAxis.length();
+
+  //Serial.println(String(u) + " | " + String(v) + " | " + uVec.toString() + " | " + vVec.toString());
+
+  if (!(u <= 1 && v <= 1 && uVec.dot(uAxis) >= 0 && vVec.dot(vAxis) >= 0)) {
+    //Serial.println("Out of Screen Bounds " + intersectionPoint.toString());
+    return Vec3f(0xCAFE, 0xCAFE, 0xCAFE);
+  }
+
+  return intersectionPoint;
+}
+
+Vec3f findPixel(Vec3f intersectionPoint, Vec3f screen1, Vec3f screen2, Vec3f screen3) {
+  Vec3f uvVec = intersectionPoint.subtract(screen2);
+  Vec3f uAxis = screen3.subtract(screen2);
+  Vec3f vAxis = screen1.subtract(screen2);
+  Vec3f uVec = uvVec.project(uAxis);
+  Vec3f vVec = uvVec.project(vAxis);
+
+  float u = uVec.length() / uAxis.length();
+  float v = vVec.length() / vAxis.length();
+
+  int xPixel = (int)(u * SCREEN_WIDTH);
+  int yPixel = (int)(v * SCREEN_HEIGHT);
+  return Vec3f(xPixel, yPixel, 0);
+}
+
+
+Vec3f calculateDisplayPixel(float pitch, float yaw, float roll){
+	float f = (pitch * 71.0) / 4068.0;
+  float g = (-yaw * 71.0) / 4068.0;
+  float h = cos(g);
+  float i = sin(g);
+  float j = cos(f);
+  float k = sin(f);
+
+	Vec3f cameraVec3f = Vec3f(i * j, -k, h * j);
+  Vec3f origin = Vec3f(0,0,0);
+         
+  // screen 2 is the bottom left corner, screen 1 is upper left, screen 3 is bottom right
+  Vec3f screen1 = Vec3f(DISPLAY_DIST,DISPLAY_HEIGHT/2,-DISPLAY_WIDTH/2);
+  Vec3f screen2 = Vec3f(DISPLAY_DIST,-DISPLAY_HEIGHT/2,-DISPLAY_WIDTH/2);
+  Vec3f screen3 = Vec3f(DISPLAY_DIST,-DISPLAY_HEIGHT/2,DISPLAY_WIDTH/2);
+  Vec3f screen4 = Vec3f(DISPLAY_DIST,DISPLAY_HEIGHT/2,DISPLAY_WIDTH/2);
+  Vec3f centerVec = Vec3f(DISPLAY_DIST,0,0);
+        
+  Quaternion rotQuat1 = Quaternion(Vec3f(0,1,0),-yaw-90);
+  float sideAxisAngle = (-(yaw+90) * 71.0) / 4068.0;
+  Vec3f sideAxis = Vec3f(sin(sideAxisAngle), 0, cos(sideAxisAngle));
+  Quaternion rotQuat2 = Quaternion(sideAxis,-pitch);
+  Quaternion rotQuat3 = Quaternion(cameraVec3f,roll);
+  Quaternion rotQuat = rotQuat3.mul(rotQuat2.mul(rotQuat1));
+        
+         
+  Vec3f screen1Rot = rotQuat.transform(screen1);
+  Vec3f screen2Rot = rotQuat.transform(screen2);
+  Vec3f screen3Rot = rotQuat.transform(screen3);
+  Vec3f screen4Rot = rotQuat.transform(screen4);
+  Vec3f centerVecRot = rotQuat.transform(centerVec);
+         
+  Vec3f intersectionPoint = findIntersection(target_point, screen1Rot.add(origin), screen2Rot.add(origin), screen3Rot.add(origin),origin);
+
+	if(intersectionPoint.x != 0xCAFE){
+    Vec3f pixel = findPixel(intersectionPoint,screen1Rot.add(origin), screen2Rot.add(origin), screen3Rot.add(origin));
+    return pixel;
+  }
+	return Vec3f(-1,-1,-1);
 }
