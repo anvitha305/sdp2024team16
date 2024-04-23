@@ -606,7 +606,7 @@ float alpha = 0.5; // ewma coefficient
 unsigned long last_sensor_check;
 Vec3f sensor_avg_1, sensor_avg_2, sensor_mean = {0,0,0};
 Vec3f sensor_data = {0,0,0};
-Vec3f grav_vec = {0,0,0};
+Vec3f grav_vec = {-9.8,0,0};
 
 // Menu Variables
 int selected_param = 0; // 0 - distance, 1 - speed, 2 - units
@@ -667,7 +667,7 @@ void loop() {
     if (millis()-last_sensor_check > BNO055_SAMPLERATE_DELAY_MS){    
       display.clearDisplay();           
       sensor_data = read_sensors();   
-      Serial.println(sensor_data.z);
+      Serial.println(grav_vec.toString());
 /*
       Serial.print("1- (");
       Serial.print(sensor_data.x);
@@ -752,8 +752,11 @@ Vec3f read_sensors(){
   else {
     address = 0;
   }
+  sensors_event_t event3;
+  bno.getEvent(&event3,Adafruit_BNO055::VECTOR_GRAVITY);
+  
   // update gravity vec for the calculation of gravitational component
-  gravity_vec = {(float)event.magnetic.x, (float)event.magnetic.y, (float)event.magnetic.z};
+  grav_vec = {(float)event3.acceleration.x, (float)event3.acceleration.y, (float)event3.acceleration.z};
   // map the values observed for y and z to their actual range of angles.
   return Vec3f(sensor_mean.x,-1*mapRange(sensor_mean.y, -30, 30, -90, 90),mapRange(sensor_mean.z,-60, 0, -180, 180));
 }
