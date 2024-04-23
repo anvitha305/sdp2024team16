@@ -150,13 +150,14 @@ public:
   }
 
   Vec3f applyCircAvg(Vec3f data2){
-    Serial.print("2- (");
-      Serial.print(data2.x);
-      Serial.print(",");
-      Serial.print(data2.y);
-      Serial.print(",");
-      Serial.print(data2.z);
-      Serial.println(")");
+    //Serial.print("2- (");
+      //Serial.print(data2.x);
+     // Serial.print(",");
+      //Serial.print(data2.y);
+      //Serial.print(",");
+     // Serial.print(data2.z);
+     // Serial.println();
+     // Serial.println(")");
 
     float diffx = max(x, data2.x) - min(x, data2.x);
     float x_val, y_val,z_val = 0;
@@ -168,20 +169,20 @@ public:
        x_val = fmod((x + data2.x)/2.0, 360); // ordinary average
     }
     float diffy = y - data2.y;
-    if (diffy > 180){
-         diffy -= 360; // make sure it's in the range -180, 180 for the averaging
+    if (diffy > 90){
+         diffy -= 180; // make sure it's in the range -180, 180 for the averaging
     }
-    if (diffy < -180){
-         diffy += 360;
+    if (diffy < -90){
+         diffy += 180;
     }
-    y_val = fmod((y + diffy)/2.0 + 180, 360) - 180;
+    y_val = fmod((y + diffy)/2.0 + 90, 180) - 90;
     //repeat it all for z
     float diffz = z - data2.z;
     if (diffz > 180){
-         diffz -= 360;
+        diffz -= 360; // Adjust to fit in the range -90 to 90 for averaging
     }
     if (diffz < -180){
-         diffz += 360;
+        diffz += 360; // Adjust to fit in the range -90 to 90 for averaging
     }
     z_val = fmod((z + diffz)/2.0 + 180, 360) - 180;
     return Vec3f(x_val, y_val, z_val);
@@ -596,7 +597,6 @@ const unsigned char* epd_bitmap_allArray[epd_bitmap_allArray_LEN] = {
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS); // initialize display class
 Adafruit_BNO055 bno = Adafruit_BNO055(55,0x28, &Wire);                                                    // initialize IMU 1 class
 Adafruit_BNO055 bno2 = Adafruit_BNO055(56,0x29, &Wire);                                                   // initialize IMU 2 class
-
 int mode = 1; // 0 - menu, 1 - target
 Button top_button(BUTTON_TOP_PIN);
 Button bottom_button(BUTTON_BOTTOM_PIN);
@@ -606,6 +606,7 @@ float alpha = 0.5; // ewma coefficient
 unsigned long last_sensor_check;
 Vec3f sensor_avg_1, sensor_avg_2, sensor_mean = {0,0,0};
 Vec3f sensor_data = {0,0,0};
+Vec3f grav_vec = {0,0,0};
 
 // Menu Variables
 int selected_param = 0; // 0 - distance, 1 - speed, 2 - units
@@ -666,7 +667,8 @@ void loop() {
     if (millis()-last_sensor_check > BNO055_SAMPLERATE_DELAY_MS){    
       display.clearDisplay();           
       sensor_data = read_sensors();   
-
+      Serial.println(sensor_data.z);
+/*
       Serial.print("1- (");
       Serial.print(sensor_data.x);
       Serial.print(",");
@@ -674,7 +676,7 @@ void loop() {
       Serial.print(",");
       Serial.print(sensor_data.z);
       Serial.println(")");
-
+*/
       render_target();
     }
   }
@@ -716,7 +718,6 @@ void render_menu(){
   // Load to the display
   display.display();
 }
-
 Vec3f read_sensors(){
   last_sensor_check = millis();
   uint8_t sys, gyro, accel, mag = 0;
@@ -731,9 +732,8 @@ Vec3f read_sensors(){
   bno2.getEvent(&event2);
   
   // using orientation for this example and can do the same for multiple sensors
-  s0_1 = {360 - (float)event.orientation.x, (float)event.orientation.y, (float)event.orientation.z};
-  s0_2 = {360 - (float)event2.orientation.x, (float)event2.orientation.y, (float)event2.orientation.z};
-  
+  s0_1 = {360 - (float)event.orientation.x, (float)(event.orientation.y), (float)event.orientation.z};
+  s0_2 = {360 - (float)event2.orientation.x, (float)(event2.orientation.y), (float)event2.orientation.z};
   sensor_avg_1 = s0_1.applyCircAvg(sensor_avg_1);
   sensor_avg_2 = s0_2.applyCircAvg(sensor_avg_2);
   sensor_mean = sensor_avg_1.applyCircAvg(sensor_avg_2);
@@ -752,8 +752,10 @@ Vec3f read_sensors(){
   else {
     address = 0;
   }
-
-  return Vec3f(sensor_mean.x,sensor_mean.y,sensor_mean.z);
+  // update gravity vec for the calculation of gravitational component
+  gravity_vec = {(float)event.magnetic.x, (float)event.magnetic.y, (float)event.magnetic.z};
+  // map the values observed for y and z to their actual range of angles.
+  return Vec3f(sensor_mean.x,-1*mapRange(sensor_mean.y, -30, 30, -90, 90),mapRange(sensor_mean.z,-60, 0, -180, 180));
 }
 
 void read_buttons(){
@@ -1028,4 +1030,9 @@ Vec3f calculateDisplayPixel(float pitch, float yaw, float roll){
     return pixel;
   }
 	return Vec3f(-1,-1,-1);
+}
+
+// linear formula for turning a range [min_old, max_old] into [min_new, max new]
+double mapRange(double value, double min_old, double max_old, double min_new, double max_new) {
+    return ((value - min_old) / (max_old - min_old)) * (max_new - min_new) + min_new;
 }
