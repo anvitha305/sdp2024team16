@@ -29,6 +29,7 @@
 #define PUSH_HOLD_DELAY 1000           // ms to hold button before repeating actions
 #define PUSH_HOLD_REPEAT 50            // ms between repeated actions when holding button
 #define BNO055_SAMPLERATE_DELAY_MS 100 // ms between IMU samples
+#define PREDICTION_CALC_DELAY_MS 10000  // ms between prediction calculations
 
 
 // Button class for debouncing and push-hold
@@ -138,6 +139,7 @@ public:
     // Check for division by zero
     if (uMagnitudeSquared == 0) {
       // Handle the error as needed
+      return Vec3f(0,0,0);
     }
 
     float scalar = dotProduct / uMagnitudeSquared;
@@ -150,15 +152,6 @@ public:
   }
 
   Vec3f applyCircAvg(Vec3f data2){
-    //Serial.print("2- (");
-      //Serial.print(data2.x);
-     // Serial.print(",");
-      //Serial.print(data2.y);
-      //Serial.print(",");
-     // Serial.print(data2.z);
-     // Serial.println();
-     // Serial.println(")");
-
     float diffx = max(x, data2.x) - min(x, data2.x);
     float x_val, y_val,z_val = 0;
     if (diffx > 180){
@@ -168,23 +161,14 @@ public:
     else{
        x_val = fmod((x + data2.x)/2.0, 360); // ordinary average
     }
-    float diffy = y - data2.y;
-    if (diffy > 90){
-         diffy -= 180; // make sure it's in the range -180, 180 for the averaging
-    }
-    if (diffy < -90){
-         diffy += 180;
-    }
-    y_val = fmod((y + diffy)/2.0 + 90, 180) - 90;
-    //repeat it all for z
-    float diffz = z - data2.z;
+    float diffz = max(z, data2.z) - min(z, data2.z);
     if (diffz > 180){
-        diffz -= 360; // Adjust to fit in the range -90 to 90 for averaging
+        z_val = fmod(((min(z, data2.z) + 360 + max(z,data2.z))/2), 360) + 180; // adjust z val for the smaller val to be shifted by 360 so that the averaging is a directional/circular average
     }
-    if (diffz < -180){
-        diffz += 360; // Adjust to fit in the range -90 to 90 for averaging
+    else{
+       z_val = fmod((z + data2.z)/2.0, 360); // ordinary average
     }
-    z_val = fmod((z + diffz)/2.0 + 180, 360) - 180;
+    y_val = (y + data2.y)/2.0;
     return Vec3f(x_val, y_val, z_val);
   }
 
@@ -194,56 +178,6 @@ public:
 
   bool operator!=(const Vec3f &other) const {
     return x != other.x || y != other.y || z != other.z;
-  }
-};
-
-class Quaternion {
-public:
-  float w, x, y, z;
-  Quaternion() : w(1), x(0), y(0), z(0) {}
-
-  Quaternion(float w, float x, float y, float z) {
-    this->w = w;
-    this->x = x;
-    this->y = y;
-    this->z = z;
-  }
-
-  Quaternion(Vec3f axis, float angleDeg){
-    float angle = (angleDeg * 71.0) / 4068.0;
-    float axisX = axis.x;
-    float axisY = axis.y;
-    float axisZ = axis.z;
-         
-    float hangle = angle / 2.0f;
-    float sinAngle = sin(hangle);
-    float vLength = sqrt(axisX * axisX + axisY * axisY + axisZ * axisZ);
-    this->w = cos(hangle); 
-    this->x = axisX / vLength * sinAngle;
-    this->y = axisY / vLength * sinAngle;
-    this->z = axisZ / vLength * sinAngle;
-  }
-
-  Quaternion mul(Quaternion q) {
-    float tempW = (this->w * q.x + (this->x * q.w + (this->y * q.z + (-this->z * q.y))));
-    float tempX = (this->w * q.y + (-this->x * q.z + (this->y * q.w + (this->z * q.x))));
-    float tempY = (this->w * q.z + (this->x * q.y + (-this->y * q.x + (this->z * q.w))));
-    float tempZ = (this->w * q.w + (-this->x * q.x + (-this->y * q.y + (-this->z * q.z))));
-    return Quaternion(tempW,tempX,tempY,tempZ);
-  }
-
-  Vec3f transform(Vec3f vec){
-    return transform(vec.x, vec.y, vec.z, vec);
-  }
-      
-  Vec3f transform(float x, float y, float z, Vec3f dest) {
-    float xx = this->x * this->x, yy = this->y * this->y, zz = this->z * this->z, ww = this->w * this->w;
-    float xy = this->x * this->y, xz = this->x * this->z, yz = this->y * this->z, xw = this->x * this->w;
-    float zw = this->z * this->w, yw = this->y * this->w, k = 1 / (xx + yy + zz + ww);
-    dest.x = ((xx - yy - zz + ww) * k * x + (2 * (xy - zw) * k * y + ((2 * (xz + yw) * k) * z)));
-    dest.y = (2 * (xy + zw) * k * x + ((yy - xx - zz + ww) * k * y + ((2 * (yz - xw) * k) * z)));
-    dest.z = (2 * (xz - yw) * k * x + (2 * (yz + xw) * k * y + (((zz - xx - yy + ww) * k) * z)));
-    return dest;
   }
 };
 
@@ -596,7 +530,6 @@ const unsigned char* epd_bitmap_allArray[epd_bitmap_allArray_LEN] = {
 // Global Variables
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS); // initialize display class
 Adafruit_BNO055 bno = Adafruit_BNO055(55,0x28, &Wire);                                                    // initialize IMU 1 class
-Adafruit_BNO055 bno2 = Adafruit_BNO055(56,0x29, &Wire);                                                   // initialize IMU 2 class
 int mode = 1; // 0 - menu, 1 - target
 Button top_button(BUTTON_TOP_PIN);
 Button bottom_button(BUTTON_BOTTOM_PIN);
@@ -604,26 +537,24 @@ Button midtop_button(BUTTON_MIDTOP_PIN);
 Button midbot_button(BUTTON_MIDBOT_PIN);
 float alpha = 0.5; // ewma coefficient
 unsigned long last_sensor_check;
-Vec3f sensor_avg_1, sensor_avg_2, sensor_mean = {0,0,0};
+unsigned long last_prediction_calc;
 Vec3f sensor_data = {0,0,0};
 Vec3f grav_vec = {-9.8,0,0};
 
 // Menu Variables
 int selected_param = 0; // 0 - distance, 1 - speed, 2 - units
 int raw_distance = 18;
-int raw_speed = 75; // units / second
+int raw_speed = 41; // units / second
 int units = 0; // 0 - meters, 1 - feet
 
 // Target Variables
+bool target_set = false;
 int battery = 99;
-int target_x = 64;
-int target_y = 32;
-Vec3f target_point = {0,0,0};
-
-// Alignment Offsets
-float pitch_offset = 0;
-float yaw_offset = 0;
-float roll_offset = 90;
+int target_x = 59;
+int target_y = 28;
+float target_yaw = 0;
+float target_pitch = 0;
+float aim_pitch = 0;
 
 void setup() {
   Wire.setSDA(20);
@@ -631,7 +562,7 @@ void setup() {
   Wire.begin();
 
   Serial.begin(115200); // set communication speed for the serial monitor
-  while (!Serial) delay(10);  // wait for serial port to open!
+  //while (!Serial) delay(10);  // wait for serial port to open!
 
   Serial.println(F("Booting"));
 
@@ -640,7 +571,7 @@ void setup() {
     for(;;); // Don't proceed, loop forever
   }
 
-  if (!bno.begin() || !bno2.begin()){
+  if (!bno.begin()){
     Serial.print("Oops, both BNO055s haven't been detected. ... Check your wiring or I2C ADDR!");
     while (1);
   }  
@@ -667,7 +598,6 @@ void loop() {
     if (millis()-last_sensor_check > BNO055_SAMPLERATE_DELAY_MS){    
       display.clearDisplay();           
       sensor_data = read_sensors();   
-      Serial.println(grav_vec.toString());
 /*
       Serial.print("1- (");
       Serial.print(sensor_data.x);
@@ -718,47 +648,34 @@ void render_menu(){
   // Load to the display
   display.display();
 }
+
 Vec3f read_sensors(){
   last_sensor_check = millis();
   uint8_t sys, gyro, accel, mag = 0;
-  uint8_t sys2, gyro2, accel2, mag2 = 0;
-  Vec3f s0_1, s0_2 = {0,0,0};
+  Vec3f s0_1 = {0,0,0};
   uint32_t address = 0;
   bno.getCalibration(&sys, &gyro, &accel, &mag);
-  bno2.getCalibration(&sys2, &gyro2, &accel2, &mag2);
 
-  sensors_event_t event, event2;
+  sensors_event_t event;
   bno.getEvent(&event);
-  bno2.getEvent(&event2);
   
   // using orientation for this example and can do the same for multiple sensors
-  s0_1 = {360 - (float)event.orientation.x, (float)(event.orientation.y), (float)event.orientation.z};
-  s0_2 = {360 - (float)event2.orientation.x, (float)(event2.orientation.y), (float)event2.orientation.z};
-  sensor_avg_1 = s0_1.applyCircAvg(sensor_avg_1);
-  sensor_avg_2 = s0_2.applyCircAvg(sensor_avg_2);
-  sensor_mean = sensor_avg_1.applyCircAvg(sensor_avg_2);
+  s0_1 = {(float)event.orientation.x, -(float)(event.orientation.y), (float)event.orientation.z};
+  sensor_data = s0_1.applyCircAvg(sensor_data);
 
-  // showing writing to the max address and loopback for a partition of the EEPROM:
-  if(address < 100*2*sizeof(uint8_t)){
-  // Serial.print(F("Calibration Sensor 1: "));
-  // Serial.print(sys, DEC);
-  // Serial.println(F(""));
-  // Serial.print(F("Calibration Sensor 2: "));
-  // Serial.print(sys2, DEC);
-  // Serial.println(F(""));
-  byte calibrations[2] = {sys, sys2};                                // create variable to hold the data value sent
-  address += sizeof(calibrations); 
-  }
-  else {
-    address = 0;
-  }
+  //Serial.print("Raw: ");
+  //Serial.println(s0_1.toString());
+  //Serial.print("Mean: ");
+  //Serial.println(sensor_data.toString());
+
   sensors_event_t event3;
   bno.getEvent(&event3,Adafruit_BNO055::VECTOR_GRAVITY);
   
   // update gravity vec for the calculation of gravitational component
   grav_vec = {(float)event3.acceleration.x, (float)event3.acceleration.y, (float)event3.acceleration.z};
   // map the values observed for y and z to their actual range of angles.
-  return Vec3f(sensor_mean.x,-1*mapRange(sensor_mean.y, -30, 30, -90, 90),mapRange(sensor_mean.z,-60, 0, -180, 180));
+  
+  return sensor_data;
 }
 
 void read_buttons(){
@@ -774,6 +691,7 @@ void read_buttons(){
       }else if(selected_param == 2){
         units = (units+1) % 2;
       }
+      target_set = false;
     }
     if(midtop_button.shouldTrigger()){
       if(selected_param == 0 && raw_distance < 998){
@@ -783,32 +701,21 @@ void read_buttons(){
       }else if(selected_param == 2){
         units = (units+1) % 2;
       }
+      target_set = false;
     }
     if(top_button.shouldTrigger()){
       selected_param = (selected_param+1) % 3;
     }
   }else if(mode == 1){
     if(midbot_button.shouldTrigger()){
-      float pitch = 0;
-      float yaw = 0;
-      float f = (pitch * 71.0) / 4068.0;
-      float g = (-yaw * 71.0) / 4068.0;
-      float h = cos(g);
-      float i = sin(g);
-      float j = cos(f);
-      float k = sin(f);
-
-      Vec3f cameraVec3f = Vec3f(i * j, -k, h * j);
-      float dist_mm = raw_distance * 1000;
-      if(units == 1){
-        dist_mm *= 0.3048;
-      }
-
-      target_point = cameraVec3f.multiply(dist_mm);
+      target_pitch = sensor_data.y;
+      target_yaw = sensor_data.x;
+      aim_pitch = calculate_prediction();
+      target_set = true;
     }
     if(top_button.shouldTrigger()){
-      yaw_offset = sensor_data.x;
-      pitch_offset = sensor_data.y;
+      Serial.println(target_x);
+      Serial.println(target_y);
     }
     if(midtop_button.shouldTrigger()){
       
@@ -817,9 +724,9 @@ void read_buttons(){
 }
 
 void render_target(){
-  float roll = sensor_data.z - roll_offset;
-  float pitch = -(sensor_data.y - pitch_offset);
-  float yaw = sensor_data.x - yaw_offset;
+  float roll = sensor_data.z-90;
+  float pitch = sensor_data.y;
+  float yaw = sensor_data.x;
   if(yaw < 0){
     yaw += 360;
   }
@@ -843,13 +750,16 @@ void render_target(){
   if(yaw > 180){
     adjusted_yaw = yaw-360;
   }
-  target_x = (int)(adjusted_yaw * (45.0/180.0) + 60);
-  target_y = (int)(pitch * (30.0/180.0) + 62);
+  float x_diff = pitch-aim_pitch;
+  float y_diff = calcCircDiff(yaw,target_yaw);
 
-  boolean left_arrows = target_y < 3;
-  boolean right_arrows = target_y > 66;
-  boolean up_arrows = target_x > 130;
-  boolean down_arrows = target_x < 3;
+  target_x = abs(x_diff) < 0.5 ? 63 : 63 - 1.75*(pitch-aim_pitch);
+  target_y = abs(y_diff) < 0.5 ? 32 : 32 - 1*(yaw-target_yaw);
+
+  bool left_arrows = target_y < 3;
+  bool right_arrows = target_y > 66;
+  bool up_arrows = target_x > 120;
+  bool down_arrows = target_x < 3;
 
   int crosshair_x = 59;
   int crosshair_y = 28;
@@ -884,12 +794,12 @@ void render_target(){
   display.drawBitmap(2, 36, epd_bitmap_allArray[yaw_4], 5, 3, 1);
   display.drawBitmap(2, 40, epd_bitmap_allArray[yaw_5], 5, 3, 1);
   // Roll Indicator
-  if(roll < -25){
+  if(roll < -10){
     display.drawBitmap(51, 20, epd_bitmap_allArray[20], 25, 25, 1);
-  }else if(roll > 25){
+  }else if(roll > 10){
     display.drawBitmap(51, 20, epd_bitmap_allArray[19], 25, 25, 1);
   }else{
-    int offset = (int) roll;
+    int offset = (int) (roll*2.5);
     display.drawBitmap(61-offset, 42, epd_bitmap_allArray[18], 3, 11, 1);
     display.drawBitmap(61+offset, 12, epd_bitmap_allArray[17], 3, 11, 1);
   }
@@ -905,26 +815,28 @@ void render_target(){
   }
 
   // Arrows
-  if(down_arrows){  
+  if(target_set && down_arrows){  
     display.drawBitmap(3, 3, epd_bitmap_allArray[16], 12, 9, 1);
     display.drawBitmap(3, 52, epd_bitmap_allArray[16], 12, 9, 1);
   }
-  if(up_arrows){  
+  if(target_set && up_arrows){  
     display.drawBitmap(105, 3, epd_bitmap_allArray[15], 12, 9, 1);
     display.drawBitmap(105, 52, epd_bitmap_allArray[15], 12, 9, 1);
   }
-  if(left_arrows){  
+  if(target_set && left_arrows){  
     display.drawBitmap(54, 3, epd_bitmap_allArray[13], 19, 9, 1);
   }
-  if(right_arrows){
+  if(target_set && right_arrows){
     display.drawBitmap(54, 52, epd_bitmap_allArray[14], 19, 9, 1);
   }
 
   // Crosshair
-  display.drawBitmap(crosshair_x,crosshair_y, epd_bitmap_allArray[12], 9, 9, 1);
+  if(target_set){
+    display.drawBitmap(crosshair_x,crosshair_y, epd_bitmap_allArray[12], 9, 9, 1);
+  }
 
   // Target Marker
-  if(target_x > 3 && target_x < 130 && target_y > 3 && target_y < 66){
+  if(target_set && target_x > 3 && target_x < 120 && target_y > 3 && target_y < 66){
     display.drawBitmap(target_x-3,target_y-3, epd_bitmap_allArray[11], 7, 7, 1);
   }
 
@@ -937,105 +849,93 @@ void render_target(){
   }
 }
 
-Vec3f findIntersection(Vec3f point, Vec3f screen1, Vec3f screen2, Vec3f screen3, Vec3f origin) {
-  Vec3f planeNormal = screen2.subtract(screen1).cross(screen3.subtract(screen1)).normalize();
-  Vec3f lineDirection = point.subtract(origin).normalize();
-
-  float dotProduct = planeNormal.dot(lineDirection);
-
-  if (abs(dotProduct) < 1e-6) {
-    // The line is parallel to the plane, no intersection
-    //Serial.println("Parallel!");
-    return Vec3f(0xCAFE, 0xCAFE, 0xCAFE);
-  }
-
-  float t = (planeNormal.dot(screen1) - planeNormal.dot(origin)) / dotProduct;
-
-  if (t < 0 || t / point.length() > 1) {
-    // The intersection point is outside the line segment
-    //Serial.println("Out of Line Bounds " + String(t) + " | " + String(t / point.length()));
-    return Vec3f(0xCAFE, 0xCAFE, 0xCAFE);
-  }
-
-  Vec3f intersectionPoint = origin.add(lineDirection.multiply(t));
-
-  Vec3f uvVec = intersectionPoint.subtract(screen2);
-  Vec3f uAxis = screen3.subtract(screen2);
-  Vec3f vAxis = screen1.subtract(screen2);
-  Vec3f uVec = uvVec.project(uAxis);
-  Vec3f vVec = uvVec.project(vAxis);
-
-  float u = uVec.length() / uAxis.length();
-  float v = vVec.length() / vAxis.length();
-
-  //Serial.println(String(u) + " | " + String(v) + " | " + uVec.toString() + " | " + vVec.toString());
-
-  if (!(u <= 1 && v <= 1 && uVec.dot(uAxis) >= 0 && vVec.dot(vAxis) >= 0)) {
-    //Serial.println("Out of Screen Bounds " + intersectionPoint.toString());
-    return Vec3f(0xCAFE, 0xCAFE, 0xCAFE);
-  }
-
-  return intersectionPoint;
+// Works with any unit scaling as long as units are internally consistent
+float ballistics(float initV, float initA, float initX, float initY, float dt, float gravity, float dragCoeff, float stopY, float stopX){
+    float lastVel = initV;
+    float lastAngle = initA;
+    float lastX = initX;
+    float lastY = initY;
+    
+    int index = 1;
+    float time = dt;
+    while(lastX <= stopX && lastY >= stopY){
+        float dv = -gravity*sin(lastAngle) - dragCoeff*lastVel*lastVel;
+        float da = -gravity*cos(lastAngle) / lastVel;
+        float dx = lastVel*cos(lastAngle);
+        float dy = lastVel*sin(lastAngle);
+        lastVel = (lastVel + dv*dt);
+        lastAngle = (lastAngle + da*dt);
+        lastX = (lastX + dx*dt);
+        lastY = (lastY + dy*dt);
+        index++;
+        time += dt;
+    }
+    return lastX;
 }
 
-Vec3f findPixel(Vec3f intersectionPoint, Vec3f screen1, Vec3f screen2, Vec3f screen3) {
-  Vec3f uvVec = intersectionPoint.subtract(screen2);
-  Vec3f uAxis = screen3.subtract(screen2);
-  Vec3f vAxis = screen1.subtract(screen2);
-  Vec3f uVec = uvVec.project(uAxis);
-  Vec3f vVec = uvVec.project(vAxis);
+float calcTheta(float v0, float dist, float dt, float coeff, float yOff){ // Units in meters and seconds, returns angle in degrees
+    float gravity = 9.81; // m/s^2
+    float upperAngle = 45;
+    float lowerAngle = -90;
+    float tryAngle = 10;
+    float curDX = 0;
+    float maxRange = ballistics(v0, (upperAngle * 71.0) / 4068.0, 0, 0, dt, gravity, coeff, yOff, 1000);
+    
+    if(maxRange < dist){
+        return upperAngle;
+    }
+    
+    int tries = 0;
+    while(tries < 100){
+        float endX = ballistics(v0, (tryAngle * 71.0) / 4068.0, 0, 0, dt, gravity, coeff, yOff, dist*1.1);
+        curDX = dist-endX;
+        float absDX = curDX < 0 ? -curDX : curDX;
 
-  float u = uVec.length() / uAxis.length();
-  float v = vVec.length() / vAxis.length();
-
-  int xPixel = (int)(u * SCREEN_WIDTH);
-  int yPixel = (int)(v * SCREEN_HEIGHT);
-  return Vec3f(xPixel, yPixel, 0);
+        if(absDX < 0.01){
+            break;
+        }else if(curDX < 0){
+            upperAngle = tryAngle;
+        }else{
+            lowerAngle = tryAngle;
+        }
+        tryAngle = (upperAngle+lowerAngle)/2;
+        tries++;
+    }
+    return tryAngle;
 }
 
+float calculate_prediction(){
+  float pitch_rad = (target_pitch * 71.0) / 4068.0;
+  float distance_m = units == 1 ? raw_distance*0.3048 : raw_distance;
+  float speed_m = units == 1 ? raw_speed*0.3048 : raw_speed;
+  float y_offset = distance_m*tan(pitch_rad);
+  float drag_coeff = 0.00235;
+  float dt = 0.0001;
+  Serial.print("Y Off: ");
+  Serial.println(y_offset);
+  Serial.print("Pitch: ");
+  Serial.println(target_pitch);
+  Serial.print("Pitch Rad: ");
+  Serial.println(pitch_rad);
 
-Vec3f calculateDisplayPixel(float pitch, float yaw, float roll){
-	float f = (pitch * 71.0) / 4068.0;
+  float angle = calcTheta(speed_m, distance_m, dt, drag_coeff, y_offset);
+  Serial.print("Calculated Angle: ");
+  Serial.println(angle);
+
+  return angle;
+}
+
+float calcCircDiff(float angle1, float angle2){
+  return fmodf((angle1 - angle2 + 180), 360) - 180;
+}
+
+Vec3f getCartesianOrientation(float pitch, float yaw){
+  float f = (pitch * 71.0) / 4068.0;
   float g = (-yaw * 71.0) / 4068.0;
   float h = cos(g);
   float i = sin(g);
   float j = cos(f);
   float k = sin(f);
 
-	Vec3f cameraVec3f = Vec3f(i * j, -k, h * j);
-  Vec3f origin = Vec3f(0,0,0);
-         
-  // screen 2 is the bottom left corner, screen 1 is upper left, screen 3 is bottom right
-  Vec3f screen1 = Vec3f(DISPLAY_DIST,DISPLAY_HEIGHT/2,-DISPLAY_WIDTH/2);
-  Vec3f screen2 = Vec3f(DISPLAY_DIST,-DISPLAY_HEIGHT/2,-DISPLAY_WIDTH/2);
-  Vec3f screen3 = Vec3f(DISPLAY_DIST,-DISPLAY_HEIGHT/2,DISPLAY_WIDTH/2);
-  Vec3f screen4 = Vec3f(DISPLAY_DIST,DISPLAY_HEIGHT/2,DISPLAY_WIDTH/2);
-  Vec3f centerVec = Vec3f(DISPLAY_DIST,0,0);
-        
-  Quaternion rotQuat1 = Quaternion(Vec3f(0,1,0),-yaw-90);
-  float sideAxisAngle = (-(yaw+90) * 71.0) / 4068.0;
-  Vec3f sideAxis = Vec3f(sin(sideAxisAngle), 0, cos(sideAxisAngle));
-  Quaternion rotQuat2 = Quaternion(sideAxis,-pitch);
-  Quaternion rotQuat3 = Quaternion(cameraVec3f,roll);
-  Quaternion rotQuat = rotQuat3.mul(rotQuat2.mul(rotQuat1));
-        
-         
-  Vec3f screen1Rot = rotQuat.transform(screen1);
-  Vec3f screen2Rot = rotQuat.transform(screen2);
-  Vec3f screen3Rot = rotQuat.transform(screen3);
-  Vec3f screen4Rot = rotQuat.transform(screen4);
-  Vec3f centerVecRot = rotQuat.transform(centerVec);
-         
-  Vec3f intersectionPoint = findIntersection(target_point, screen1Rot.add(origin), screen2Rot.add(origin), screen3Rot.add(origin),origin);
-
-	if(intersectionPoint.x != 0xCAFE){
-    Vec3f pixel = findPixel(intersectionPoint,screen1Rot.add(origin), screen2Rot.add(origin), screen3Rot.add(origin));
-    return pixel;
-  }
-	return Vec3f(-1,-1,-1);
-}
-
-// linear formula for turning a range [min_old, max_old] into [min_new, max new]
-double mapRange(double value, double min_old, double max_old, double min_new, double max_new) {
-    return ((value - min_old) / (max_old - min_old)) * (max_new - min_new) + min_new;
+	return Vec3f(i * j, -k, h * j);
 }
